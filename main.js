@@ -21,6 +21,10 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src/views/index.html'));
+  const senderId = mainWindow.webContents.id;
+  mainWindow.webContents.on('destroyed', () => {
+    authSessions.delete(senderId);
+  });
 }
 
 app.whenReady().then(() => {

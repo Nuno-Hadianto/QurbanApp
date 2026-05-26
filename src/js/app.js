@@ -1,7 +1,9 @@
 const state = { user: null, hewan: [], peserta: [], pembayaran: [], laporan: { hewan: [], peserta: [], pembayaran: [] } };
 let fotoHewanBase64 = '';
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const SESSION_TOUCH_THROTTLE_MS = 15000;
 let sessionGuardStarted = false;
+let lastSessionTouch = 0;
 
 const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
@@ -36,6 +38,9 @@ function restoreSession() {
 
 function touchSession() {
   if (!state.user) return;
+  const now = Date.now();
+  if ((now - lastSessionTouch) < SESSION_TOUCH_THROTTLE_MS) return;
+  lastSessionTouch = now;
   localStorage.setItem('sessionLastActive', String(Date.now()));
 }
 

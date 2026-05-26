@@ -17,8 +17,23 @@ function resolveDbPath() {
 const dbPath = resolveDbPath();
 const restorePendingPath = `${dbPath}.restore`;
 
+function isValidSqliteFile(filePath) {
+  try {
+    const testDb = new Database(filePath, { readonly: true, fileMustExist: true });
+    testDb.prepare('PRAGMA schema_version').get();
+    testDb.close();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function applyPendingRestoreIfExists() {
   if (!fs.existsSync(restorePendingPath)) return;
+  if (!isValidSqliteFile(restorePendingPath)) {
+    fs.unlinkSync(restorePendingPath);
+    return;
+  }
   fs.copyFileSync(restorePendingPath, dbPath);
   fs.unlinkSync(restorePendingPath);
 }
