@@ -134,6 +134,11 @@ function createPembayaran(payload) {
   return { success: true, message: 'Pembayaran ditambahkan' };
 }
 
+function deletePembayaran(id) {
+  db.prepare('DELETE FROM pembayaran WHERE id = ?').run(id);
+  return { success: true, message: 'Pembayaran dihapus' };
+}
+
 function getPembayaranSummary() {
   return {
     lunas: db.prepare("SELECT COUNT(*) total FROM pembayaran WHERE status = 'lunas'").get().total,
@@ -229,6 +234,7 @@ module.exports = {
   deletePeserta,
   listPembayaran,
   createPembayaran,
+  deletePembayaran,
   getPembayaranSummary,
   listSapi,
   listPatunganByHewan,

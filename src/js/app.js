@@ -150,8 +150,9 @@ async function loadPembayaran() {
   state.pembayaran = await window.api.listPembayaran();
   const rows = state.pembayaran.map((p, i) => `<tr>
     <td>${i + 1}</td><td>${p.nama_peserta}</td><td>${rupiah(p.jumlah)}</td><td>${p.metode}</td><td>${p.status}</td><td>${new Date(p.tanggal).toLocaleString('id-ID')}</td>
+    <td><button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button></td>
   </tr>`).join('');
-  qs('pembayaranTable').innerHTML = `<thead><tr><th>#</th><th>Peserta</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Tanggal</th></tr></thead><tbody>${rows}</tbody>`;
+  qs('pembayaranTable').innerHTML = `<thead><tr><th>#</th><th>Peserta</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 async function setupPatungan() {
@@ -292,6 +293,16 @@ function bindEvents() {
     if (!id) return;
     if (e.target.classList.contains('btn-edit-peserta')) editPeserta(state.peserta.find((p) => p.id === id));
     if (e.target.classList.contains('btn-del-peserta')) await hapusPeserta(id);
+  });
+  qs('pembayaranTable').addEventListener('click', async (e) => {
+    const id = Number(e.target.dataset.id || 0);
+    if (!id || !e.target.classList.contains('btn-del-pembayaran')) return;
+    if (!confirm('Yakin hapus pembayaran ini?')) return;
+    const res = await window.api.deletePembayaran(id);
+    if (!res?.success) return notify('danger', res?.message || 'Gagal hapus pembayaran');
+    notify('success', 'Pembayaran dihapus');
+    await loadPembayaran();
+    await loadDashboard();
   });
 
   qs('hewanForm').addEventListener('submit', async (e) => {

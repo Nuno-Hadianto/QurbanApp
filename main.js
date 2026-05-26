@@ -76,6 +76,7 @@ ipcMain.handle('peserta:delete', safeHandle(async (_, id) => service.deletePeser
 
 ipcMain.handle('pembayaran:list', async () => service.listPembayaran());
 ipcMain.handle('pembayaran:create', safeHandle(async (_, payload) => service.createPembayaran(payload)));
+ipcMain.handle('pembayaran:delete', safeHandle(async (_, id) => service.deletePembayaran(id)));
 ipcMain.handle('pembayaran:summary', async () => service.getPembayaranSummary());
 ipcMain.handle('laporan:get', async (_, payload) => service.getLaporan(payload || {}));
 
