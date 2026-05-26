@@ -128,8 +128,8 @@ async function hapusHewan(id) {
 }
 
 function renderPeserta() {
-  qs('pesertaPatunganSelect').innerHTML = state.peserta.map((p) => `<option value="${p.id}">${p.nama}</option>`).join('');
-  qs('pembayaranPeserta').innerHTML = state.peserta.map((p) => `<option value="${p.id}">${p.nama}</option>`).join('');
+  qs('pesertaPatunganList').innerHTML = state.peserta.map((p) => `<option value="${p.nama}"></option>`).join('');
+  qs('pembayaranPesertaList').innerHTML = state.peserta.map((p) => `<option value="${p.nama}"></option>`).join('');
   const rows = state.peserta.map((p, i) => `<tr>
     <td>${i + 1}</td><td>${p.nama}</td><td>${p.alamat}</td><td>${p.no_hp}</td><td>${p.jenis_kurban}</td>
     <td><button class="btn btn-sm btn-warning btn-edit-peserta" data-id="${p.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-peserta" data-id="${p.id}">Hapus</button></td>
