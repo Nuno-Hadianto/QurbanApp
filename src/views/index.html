@@ -79,8 +79,26 @@
           </section>
 
           <section id="laporanSection" class="view-section d-none">
-            <button id="exportPdf" class="btn btn-gold me-2">Export PDF</button>
-            <button onclick="window.print()" class="btn btn-outline-secondary">Print</button>
+            <div class="row g-3 align-items-end mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Dari Tanggal</label>
+                <input id="laporanFrom" type="date" class="form-control" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Sampai Tanggal</label>
+                <input id="laporanTo" type="date" class="form-control" />
+              </div>
+              <div class="col-md-6 text-md-end">
+                <button id="filterLaporanBtn" class="btn btn-emerald me-2">Terapkan Filter</button>
+                <button id="resetLaporanBtn" class="btn btn-outline-secondary me-2">Reset</button>
+                <button id="exportPdf" class="btn btn-gold me-2">Export PDF</button>
+                <button onclick="window.print()" class="btn btn-outline-dark">Print</button>
+              </div>
+            </div>
+            <div id="laporanSummary" class="row g-3 mb-3"></div>
+            <div class="table-wrap mb-3"><h6>Data Hewan</h6><table class="table" id="laporanHewanTable"></table></div>
+            <div class="table-wrap mb-3"><h6>Data Peserta</h6><table class="table" id="laporanPesertaTable"></table></div>
+            <div class="table-wrap"><h6>Data Pembayaran</h6><table class="table" id="laporanPembayaranTable"></table></div>
           </section>
 
           <section id="pengaturanSection" class="view-section d-none">
