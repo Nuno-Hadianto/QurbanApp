@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QurbanApp</title>
+  <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="../../node_modules/bootstrap-icons/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div id="loader" class="loader-overlay d-none"><div class="spinner-border text-light"></div></div>
+
+  <section id="loginView" class="login-wrap">
+    <div class="login-card shadow-lg">
+      <h3 class="fw-bold text-emerald">QurbanApp</h3>
+      <p class="text-muted">Login panitia kurban</p>
+      <form id="loginForm">
+        <div class="mb-3"><label>Username</label><input id="username" class="form-control" required></div>
+        <div class="mb-3"><label>Password</label><input id="password" type="password" class="form-control" required></div>
+        <button class="btn btn-emerald w-100">Masuk</button>
+      </form>
+      <small class="text-muted d-block mt-3">admin/admin123 | bendahara/bendahara123 | panitia/panitia123</small>
+    </div>
+  </section>
+
+  <section id="appView" class="d-none">
+    <div class="d-flex">
+      <aside class="sidebar p-3">
+        <h5 class="text-white mb-4">QurbanApp</h5>
+        <button class="nav-btn active" data-view="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</button>
+        <button class="nav-btn" data-view="hewan"><i class="bi bi-box2-heart"></i> Data Hewan</button>
+        <button class="nav-btn" data-view="peserta"><i class="bi bi-people"></i> Peserta Kurban</button>
+        <button class="nav-btn" data-view="patungan"><i class="bi bi-diagram-3"></i> Patungan Sapi</button>
+        <button class="nav-btn" data-view="pembayaran"><i class="bi bi-cash-stack"></i> Pembayaran</button>
+        <button class="nav-btn" data-view="laporan"><i class="bi bi-file-earmark-text"></i> Laporan</button>
+        <button class="nav-btn" data-view="pengaturan"><i class="bi bi-gear"></i> Pengaturan</button>
+      </aside>
+      <main class="content flex-grow-1">
+        <nav class="navbar bg-white shadow-sm px-4 py-3 d-flex justify-content-between">
+          <h6 id="pageTitle" class="mb-0">Dashboard</h6>
+          <div><span id="sessionUser" class="me-3"></span><button id="logoutBtn" class="btn btn-sm btn-outline-danger">Logout</button></div>
+        </nav>
+
+        <div class="p-4">
+          <div id="alertBox"></div>
+
+          <section id="dashboardSection" class="view-section"></section>
+
+          <section id="hewanSection" class="view-section d-none">
+            <div class="d-flex justify-content-between mb-3">
+              <input id="searchHewan" class="form-control w-25" placeholder="Cari hewan..." />
+              <button class="btn btn-emerald" data-bs-toggle="modal" data-bs-target="#hewanModal">Tambah Hewan</button>
+            </div>
+            <div class="table-wrap"><table class="table" id="hewanTable"></table></div>
+          </section>
+
+          <section id="pesertaSection" class="view-section d-none">
+            <div class="d-flex justify-content-between mb-3">
+              <input id="searchPeserta" class="form-control w-25" placeholder="Cari peserta..." />
+              <button class="btn btn-emerald" data-bs-toggle="modal" data-bs-target="#pesertaModal">Tambah Peserta</button>
+            </div>
+            <div class="table-wrap"><table class="table" id="pesertaTable"></table></div>
+          </section>
+
+          <section id="patunganSection" class="view-section d-none">
+            <div class="row g-3">
+              <div class="col-4"><select id="sapiSelect" class="form-select"></select></div>
+              <div class="col-4"><select id="pesertaPatunganSelect" class="form-select"></select></div>
+              <div class="col-2"><select id="slotSelect" class="form-select"></select></div>
+              <div class="col-2"><button id="savePatunganBtn" class="btn btn-emerald w-100">Simpan</button></div>
+            </div>
+            <div class="table-wrap mt-3"><table class="table" id="patunganTable"></table></div>
+          </section>
+
+          <section id="pembayaranSection" class="view-section d-none">
+            <button class="btn btn-emerald mb-3" data-bs-toggle="modal" data-bs-target="#pembayaranModal">Input Pembayaran</button>
+            <div class="table-wrap"><table class="table" id="pembayaranTable"></table></div>
+          </section>
+
+          <section id="laporanSection" class="view-section d-none">
+            <button id="exportPdf" class="btn btn-gold me-2">Export PDF</button>
+            <button onclick="window.print()" class="btn btn-outline-secondary">Print</button>
+          </section>
+
+          <section id="pengaturanSection" class="view-section d-none">
+            <button id="backupBtn" class="btn btn-emerald me-2">Backup Database</button>
+            <button id="restoreBtn" class="btn btn-outline-warning">Restore Database</button>
+          </section>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <div class="modal fade" id="hewanModal"><div class="modal-dialog"><form id="hewanForm" class="modal-content"><div class="modal-header"><h5>Form Hewan</h5></div><div class="modal-body">
+    <input type="hidden" id="hewanId" />
+    <div class="mb-2"><label>Jenis</label><select id="jenisHewan" class="form-select"><option>Sapi</option><option>Kambing</option></select></div>
+    <div class="mb-2"><label>Nama Hewan</label><input id="namaHewan" class="form-control" required /></div>
+    <div class="mb-2"><label>Berat</label><input id="beratHewan" type="number" class="form-control" required /></div>
+    <div class="mb-2"><label>Harga</label><input id="hargaHewan" type="number" class="form-control" required /></div>
+    <div class="mb-2"><label>Status</label><select id="statusHewan" class="form-select"><option>tersedia</option><option>dipotong</option><option>selesai</option></select></div>
+  </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
+
+  <div class="modal fade" id="pesertaModal"><div class="modal-dialog"><form id="pesertaForm" class="modal-content"><div class="modal-header"><h5>Form Peserta</h5></div><div class="modal-body">
+    <input type="hidden" id="pesertaId" />
+    <div class="mb-2"><label>Nama</label><input id="namaPeserta" class="form-control" required /></div>
+    <div class="mb-2"><label>Alamat</label><textarea id="alamatPeserta" class="form-control" required></textarea></div>
+    <div class="mb-2"><label>No HP</label><input id="hpPeserta" class="form-control" required /></div>
+    <div class="mb-2"><label>Jenis Kurban</label><input id="jenisKurban" class="form-control" required /></div>
+  </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
+
+  <div class="modal fade" id="pembayaranModal"><div class="modal-dialog"><form id="pembayaranForm" class="modal-content"><div class="modal-header"><h5>Input Pembayaran</h5></div><div class="modal-body">
+    <div class="mb-2"><label>Peserta</label><select id="pembayaranPeserta" class="form-select"></select></div>
+    <div class="mb-2"><label>Jumlah</label><input id="jumlahBayar" type="number" class="form-control" required /></div>
+    <div class="mb-2"><label>Metode</label><select id="metodeBayar" class="form-select"><option>cash</option><option>transfer</option></select></div>
+    <div class="mb-2"><label>Status</label><select id="statusBayar" class="form-select"><option>lunas</option><option>belum lunas</option></select></div>
+  </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
+
+  <script src="../../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../node_modules/jspdf/dist/jspdf.umd.min.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>
