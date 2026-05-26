@@ -222,6 +222,33 @@ async function loadDbPath() {
   qs('dbPathInput').value = res?.path || '-';
 }
 
+async function copyTextSafe(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) {
+    // Fallback below.
+  }
+
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch (_) {
+    ok = false;
+  }
+  document.body.removeChild(ta);
+  return ok;
+}
+
 function bindEvents() {
   qs('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -376,8 +403,8 @@ function bindEvents() {
   qs('copyDbPathBtn').addEventListener('click', async () => {
     const pathVal = qs('dbPathInput').value;
     if (!pathVal || pathVal === '-') return;
-    await navigator.clipboard.writeText(pathVal);
-    notify('success', 'Path database disalin');
+    const ok = await copyTextSafe(pathVal);
+    notify(ok ? 'success' : 'warning', ok ? 'Path database disalin' : 'Gagal menyalin otomatis. Silakan copy manual dari kolom path.');
   });
 
   qs('changePasswordForm').addEventListener('submit', async (e) => {
