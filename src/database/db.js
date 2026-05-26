@@ -43,6 +43,7 @@ const db = new Database(dbPath);
 
 function initDatabase() {
   db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -109,22 +110,26 @@ function seedData() {
     return `scrypt$${salt}$${hash}`;
   };
 
-  const insertUser = db.prepare('INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)');
-  insertUser.run('Admin Qurban', 'admin', hashPassword('admin123'), 'Admin');
-  insertUser.run('Bendahara Qurban', 'bendahara', hashPassword('bendahara123'), 'Bendahara');
-  insertUser.run('Panitia Qurban', 'panitia', hashPassword('panitia123'), 'Panitia');
+  const seedTransaction = db.transaction(() => {
+    const insertUser = db.prepare('INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)');
+    insertUser.run('Admin Qurban', 'admin', hashPassword('admin123'), 'Admin');
+    insertUser.run('Bendahara Qurban', 'bendahara', hashPassword('bendahara123'), 'Bendahara');
+    insertUser.run('Panitia Qurban', 'panitia', hashPassword('panitia123'), 'Panitia');
 
-  const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now);
-  insertHewan.run('HWN-002', 'Kambing', 'Kambing Etawa B', 35, 4200000, 'dipotong', '', now);
+    const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now);
+    insertHewan.run('HWN-002', 'Kambing', 'Kambing Etawa B', 35, 4200000, 'dipotong', '', now);
 
-  const insertPeserta = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)');
-  const p1 = insertPeserta.run('Ahmad Fauzi', 'Jl. Melati 5', '081234567890', 'Patungan Sapi', now).lastInsertRowid;
-  const p2 = insertPeserta.run('Budi Santoso', 'Jl. Mawar 2', '081298765432', 'Kambing Pribadi', now).lastInsertRowid;
+    const insertPeserta = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)');
+    const p1 = insertPeserta.run('Ahmad Fauzi', 'Jl. Melati 5', '081234567890', 'Patungan Sapi', now).lastInsertRowid;
+    const p2 = insertPeserta.run('Budi Santoso', 'Jl. Mawar 2', '081298765432', 'Kambing Pribadi', now).lastInsertRowid;
 
-  db.prepare('INSERT INTO patungan (hewan_id, peserta_id, slot_ke, status) VALUES (?, ?, ?, ?)').run(1, p1, 1, 'terisi');
-  db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p1, 2500000, 'transfer', 'belum lunas', now);
-  db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p2, 4200000, 'cash', 'lunas', now);
+    db.prepare('INSERT INTO patungan (hewan_id, peserta_id, slot_ke, status) VALUES (?, ?, ?, ?)').run(1, p1, 1, 'terisi');
+    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p1, 2500000, 'transfer', 'belum lunas', now);
+    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p2, 4200000, 'cash', 'lunas', now);
+  });
+  
+  seedTransaction();
 }
 
 module.exports = { db, dbPath, restorePendingPath, initDatabase };
