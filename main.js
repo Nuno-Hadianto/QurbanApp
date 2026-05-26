@@ -48,14 +48,24 @@ const safeHandle = (handler) => async (...args) => {
   }
 };
 
+const secureHandle = (handler) => async (event, ...args) => {
+  if (!authSessions.has(event.sender.id)) {
+    return { success: false, message: 'Sesi tidak valid atau telah berakhir. Silakan login ulang.' };
+  }
+  try {
+    return await handler(event, ...args);
+  } catch (error) {
+    return { success: false, message: error?.message || 'Terjadi kesalahan sistem' };
+  }
+};
+
 ipcMain.handle('auth:login', safeHandle(async (event, payload) => {
   const res = service.login(payload);
   if (res?.success) authSessions.set(event.sender.id, res.data.id);
   return res;
 }));
-ipcMain.handle('auth:change-password', safeHandle(async (event, payload) => {
+ipcMain.handle('auth:change-password', secureHandle(async (event, payload) => {
   const userId = authSessions.get(event.sender.id);
-  if (!userId) return { success: false, message: 'Sesi login tidak valid. Silakan login ulang.' };
   return service.changePassword({
     userId,
     currentPassword: payload.currentPassword,
@@ -69,26 +79,26 @@ ipcMain.handle('auth:logout', async (event) => {
 ipcMain.handle('dashboard:stats', async () => service.getDashboardStats());
 
 ipcMain.handle('hewan:list', async (_, q) => service.listHewan(q));
-ipcMain.handle('hewan:create', safeHandle(async (_, payload) => service.createHewan(payload)));
-ipcMain.handle('hewan:update', safeHandle(async (_, payload) => service.updateHewan(payload)));
-ipcMain.handle('hewan:delete', safeHandle(async (_, id) => service.deleteHewan(id)));
+ipcMain.handle('hewan:create', secureHandle(async (_, payload) => service.createHewan(payload)));
+ipcMain.handle('hewan:update', secureHandle(async (_, payload) => service.updateHewan(payload)));
+ipcMain.handle('hewan:delete', secureHandle(async (_, id) => service.deleteHewan(id)));
 
 ipcMain.handle('peserta:list', async (_, q) => service.listPeserta(q));
-ipcMain.handle('peserta:create', safeHandle(async (_, payload) => service.createPeserta(payload)));
-ipcMain.handle('peserta:update', safeHandle(async (_, payload) => service.updatePeserta(payload)));
-ipcMain.handle('peserta:delete', safeHandle(async (_, id) => service.deletePeserta(id)));
+ipcMain.handle('peserta:create', secureHandle(async (_, payload) => service.createPeserta(payload)));
+ipcMain.handle('peserta:update', secureHandle(async (_, payload) => service.updatePeserta(payload)));
+ipcMain.handle('peserta:delete', secureHandle(async (_, id) => service.deletePeserta(id)));
 
 ipcMain.handle('pembayaran:list', async () => service.listPembayaran());
-ipcMain.handle('pembayaran:create', safeHandle(async (_, payload) => service.createPembayaran(payload)));
-ipcMain.handle('pembayaran:delete', safeHandle(async (_, id) => service.deletePembayaran(id)));
+ipcMain.handle('pembayaran:create', secureHandle(async (_, payload) => service.createPembayaran(payload)));
+ipcMain.handle('pembayaran:delete', secureHandle(async (_, id) => service.deletePembayaran(id)));
 ipcMain.handle('pembayaran:summary', async () => service.getPembayaranSummary());
 ipcMain.handle('laporan:get', async (_, payload) => service.getLaporan(payload || {}));
 
 ipcMain.handle('master:sapi', async () => service.listSapi());
 ipcMain.handle('patungan:list', async (_, hewanId) => service.listPatunganByHewan(hewanId));
-ipcMain.handle('patungan:add', safeHandle(async (_, payload) => service.addPatungan(payload)));
-ipcMain.handle('patungan:update', safeHandle(async (_, payload) => service.updatePatungan(payload)));
-ipcMain.handle('patungan:delete', safeHandle(async (_, id) => service.deletePatungan(id)));
+ipcMain.handle('patungan:add', secureHandle(async (_, payload) => service.addPatungan(payload)));
+ipcMain.handle('patungan:update', secureHandle(async (_, payload) => service.updatePatungan(payload)));
+ipcMain.handle('patungan:delete', secureHandle(async (_, id) => service.deletePatungan(id)));
 
 ipcMain.handle('settings:backup', safeHandle(async () => {
   const result = await dialog.showSaveDialog({

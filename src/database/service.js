@@ -1,8 +1,28 @@
 const { db, dbPath, restorePendingPath, initDatabase } = require('./db');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 initDatabase();
 
 const now = () => new Date().toISOString();
+
+function saveBase64Image(base64Str) {
+  if (!base64Str || !base64Str.startsWith('data:image/')) return base64Str;
+  const matches = base64Str.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) return base64Str;
+  
+  const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+  const buffer = Buffer.from(matches[2], 'base64');
+  
+  const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  
+  const filename = `hewan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+  const filepath = path.join(uploadDir, filename);
+  fs.writeFileSync(filepath, buffer);
+  
+  return filename;
+}
 
 function login({ username, password }) {
   const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
@@ -73,14 +93,19 @@ function listHewan(q = '') {
 function createHewan(payload) {
   const maxId = db.prepare('SELECT IFNULL(MAX(id), 0) maxId FROM hewan').get().maxId;
   const kode = `HWN-${String(Number(maxId) + 1).padStart(3, '0')}`;
+  const filename = saveBase64Image(payload.foto || '');
   const stmt = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  stmt.run(kode, payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, payload.foto || '', now());
+  stmt.run(kode, payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, now());
   return { success: true, message: 'Data hewan ditambahkan' };
 }
 
 function updateHewan(payload) {
+  let filename = payload.foto || '';
+  if (filename.startsWith('data:image/')) {
+    filename = saveBase64Image(payload.foto);
+  }
   const stmt = db.prepare('UPDATE hewan SET jenis_hewan = ?, nama_hewan = ?, berat = ?, harga = ?, status = ?, foto = ? WHERE id = ?');
-  stmt.run(payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, payload.foto || '', payload.id);
+  stmt.run(payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, payload.id);
   return { success: true, message: 'Data hewan diperbarui' };
 }
 
