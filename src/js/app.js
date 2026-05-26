@@ -1,4 +1,5 @@
 const state = { user: null, hewan: [], peserta: [], pembayaran: [] };
+let fotoHewanBase64 = '';
 
 const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
@@ -66,6 +67,7 @@ window.editHewan = (h) => {
   qs('beratHewan').value = h.berat;
   qs('hargaHewan').value = h.harga;
   qs('statusHewan').value = h.status;
+  fotoHewanBase64 = h.foto || '';
   new bootstrap.Modal(qs('hewanModal')).show();
 };
 
@@ -172,11 +174,12 @@ function bindEvents() {
       nama_hewan: qs('namaHewan').value,
       berat: Number(qs('beratHewan').value),
       harga: Number(qs('hargaHewan').value),
-      status: qs('statusHewan').value
+      status: qs('statusHewan').value,
+      foto: fotoHewanBase64
     };
     if (payload.id) await window.api.updateHewan(payload); else await window.api.createHewan(payload);
     bootstrap.Modal.getInstance(qs('hewanModal')).hide();
-    qs('hewanForm').reset(); qs('hewanId').value = '';
+    qs('hewanForm').reset(); qs('hewanId').value = ''; fotoHewanBase64 = '';
     notify('success', 'Data hewan tersimpan');
     await loadHewan(); await loadDashboard(); await setupPatungan();
   });
@@ -223,6 +226,13 @@ function bindEvents() {
   });
 
   qs('sapiSelect').addEventListener('change', renderPatunganTable);
+  qs('fotoHewan').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { fotoHewanBase64 = reader.result; };
+    reader.readAsDataURL(file);
+  });
 
   qs('backupBtn').addEventListener('click', async () => {
     const res = await window.api.backupDb();
