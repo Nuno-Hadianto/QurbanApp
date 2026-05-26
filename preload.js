@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('api', {
   listSapi: () => ipcRenderer.invoke('master:sapi'),
   listPatunganByHewan: (hewanId) => ipcRenderer.invoke('patungan:list', hewanId),
   addPatungan: (payload) => ipcRenderer.invoke('patungan:add', payload),
+  updatePatungan: (payload) => ipcRenderer.invoke('patungan:update', payload),
+  deletePatungan: (id) => ipcRenderer.invoke('patungan:delete', id),
 
   backupDb: () => ipcRenderer.invoke('settings:backup'),
   restoreDb: () => ipcRenderer.invoke('settings:restore')

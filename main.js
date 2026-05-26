@@ -56,6 +56,8 @@ ipcMain.handle('laporan:get', async (_, payload) => service.getLaporan(payload |
 ipcMain.handle('master:sapi', async () => service.listSapi());
 ipcMain.handle('patungan:list', async (_, hewanId) => service.listPatunganByHewan(hewanId));
 ipcMain.handle('patungan:add', async (_, payload) => service.addPatungan(payload));
+ipcMain.handle('patungan:update', async (_, payload) => service.updatePatungan(payload));
+ipcMain.handle('patungan:delete', async (_, id) => service.deletePatungan(id));
 
 ipcMain.handle('settings:backup', async () => {
   const result = await dialog.showSaveDialog({

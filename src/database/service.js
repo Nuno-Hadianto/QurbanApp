@@ -100,10 +100,30 @@ function addPatungan({ hewan_id, peserta_id, slot_ke }) {
 
   const existSlot = db.prepare('SELECT id FROM patungan WHERE hewan_id = ? AND slot_ke = ?').get(hewan_id, slot_ke);
   if (existSlot) return { success: false, message: 'Slot sudah terisi' };
+  const existPeserta = db.prepare('SELECT id FROM patungan WHERE hewan_id = ? AND peserta_id = ?').get(hewan_id, peserta_id);
+  if (existPeserta) return { success: false, message: 'Peserta sudah terdaftar di sapi ini' };
 
   db.prepare('INSERT INTO patungan (hewan_id, peserta_id, slot_ke, status) VALUES (?, ?, ?, ?)')
     .run(hewan_id, peserta_id, slot_ke, 'terisi');
   return { success: true, message: 'Peserta masuk patungan sapi' };
+}
+
+function updatePatungan({ id, hewan_id, peserta_id, slot_ke }) {
+  const row = db.prepare('SELECT * FROM patungan WHERE id = ?').get(id);
+  if (!row) return { success: false, message: 'Data patungan tidak ditemukan' };
+
+  const existSlot = db.prepare('SELECT id FROM patungan WHERE hewan_id = ? AND slot_ke = ? AND id != ?').get(hewan_id, slot_ke, id);
+  if (existSlot) return { success: false, message: 'Slot tujuan sudah terisi' };
+  const existPeserta = db.prepare('SELECT id FROM patungan WHERE hewan_id = ? AND peserta_id = ? AND id != ?').get(hewan_id, peserta_id, id);
+  if (existPeserta) return { success: false, message: 'Peserta sudah terdaftar di sapi ini' };
+
+  db.prepare('UPDATE patungan SET peserta_id = ?, slot_ke = ? WHERE id = ?').run(peserta_id, slot_ke, id);
+  return { success: true, message: 'Data patungan diperbarui' };
+}
+
+function deletePatungan(id) {
+  db.prepare('DELETE FROM patungan WHERE id = ?').run(id);
+  return { success: true, message: 'Slot patungan dikosongkan' };
 }
 
 function getDbPath() {
@@ -152,6 +172,8 @@ module.exports = {
   listSapi,
   listPatunganByHewan,
   addPatungan,
+  updatePatungan,
+  deletePatungan,
   getDbPath,
   getLaporan
 };
