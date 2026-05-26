@@ -92,14 +92,18 @@ function card(title, value, icon) {
   return `<div class="col-md-4"><div class="card card-stat shadow-sm"><div class="card-body d-flex justify-content-between"><div><small>${title}</small><h4>${value}</h4></div><i class="bi ${icon} fs-2 text-emerald"></i></div></div></div>`;
 }
 
-async function loadHewan(q = '') {
-  state.hewan = await window.api.listHewan(q);
+function renderHewan() {
   const rows = state.hewan.map((h, i) => `<tr>
     <td>${i + 1}</td><td>${h.kode_hewan}</td><td>${h.jenis_hewan}</td><td>${h.nama_hewan}</td>
     <td>${h.berat} kg</td><td>${rupiah(h.harga)}</td><td>${h.status}</td>
     <td><button class="btn btn-sm btn-warning btn-edit-hewan" data-id="${h.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-hewan" data-id="${h.id}">Hapus</button></td>
   </tr>`).join('');
   qs('hewanTable').innerHTML = `<thead><tr><th>#</th><th>Kode</th><th>Jenis</th><th>Nama</th><th>Berat</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+async function loadHewan(q = '') {
+  state.hewan = await window.api.listHewan(q);
+  renderHewan();
 }
 
 function editHewan(h) {
@@ -118,12 +122,12 @@ async function hapusHewan(id) {
   const res = await window.api.deleteHewan(id);
   if (!res?.success) return notify('danger', res?.message || 'Gagal hapus data hewan');
   notify('success', 'Data hewan dihapus');
-  await loadHewan();
+  state.hewan = state.hewan.filter(h => h.id !== id);
+  renderHewan();
   await loadDashboard();
 }
 
-async function loadPeserta(q = '') {
-  state.peserta = await window.api.listPeserta(q);
+function renderPeserta() {
   qs('pesertaPatunganSelect').innerHTML = state.peserta.map((p) => `<option value="${p.id}">${p.nama}</option>`).join('');
   qs('pembayaranPeserta').innerHTML = state.peserta.map((p) => `<option value="${p.id}">${p.nama}</option>`).join('');
   const rows = state.peserta.map((p, i) => `<tr>
@@ -131,6 +135,11 @@ async function loadPeserta(q = '') {
     <td><button class="btn btn-sm btn-warning btn-edit-peserta" data-id="${p.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-peserta" data-id="${p.id}">Hapus</button></td>
   </tr>`).join('');
   qs('pesertaTable').innerHTML = `<thead><tr><th>#</th><th>Nama</th><th>Alamat</th><th>No HP</th><th>Jenis Kurban</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+async function loadPeserta(q = '') {
+  state.peserta = await window.api.listPeserta(q);
+  renderPeserta();
 }
 
 function editPeserta(p) {
@@ -147,17 +156,22 @@ async function hapusPeserta(id) {
   const res = await window.api.deletePeserta(id);
   if (!res?.success) return notify('danger', res?.message || 'Gagal hapus data peserta');
   notify('success', 'Data peserta dihapus');
-  await loadPeserta();
+  state.peserta = state.peserta.filter(p => p.id !== id);
+  renderPeserta();
   await loadDashboard();
 }
 
-async function loadPembayaran() {
-  state.pembayaran = await window.api.listPembayaran();
+function renderPembayaran() {
   const rows = state.pembayaran.map((p, i) => `<tr>
     <td>${i + 1}</td><td>${p.nama_peserta}</td><td>${rupiah(p.jumlah)}</td><td>${p.metode}</td><td>${p.status}</td><td>${new Date(p.tanggal).toLocaleString('id-ID')}</td>
     <td><button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button></td>
   </tr>`).join('');
   qs('pembayaranTable').innerHTML = `<thead><tr><th>#</th><th>Peserta</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+async function loadPembayaran() {
+  state.pembayaran = await window.api.listPembayaran();
+  renderPembayaran();
 }
 
 async function setupPatungan() {
@@ -306,7 +320,8 @@ function bindEvents() {
     const res = await window.api.deletePembayaran(id);
     if (!res?.success) return notify('danger', res?.message || 'Gagal hapus pembayaran');
     notify('success', 'Pembayaran dihapus');
-    await loadPembayaran();
+    state.pembayaran = state.pembayaran.filter(p => p.id !== id);
+    renderPembayaran();
     await loadDashboard();
   });
 
