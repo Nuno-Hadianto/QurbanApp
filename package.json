@@ -1,0 +1,53 @@
+{
+  "name": "qurbanapp",
+  "version": "1.0.0",
+  "description": "Aplikasi desktop offline pendataan kurban",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "electron",
+    "qurban",
+    "sqlite"
+  ],
+  "author": "QurbanApp",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.1.1",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "jspdf": "^3.0.3"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.qurbanapp.desktop",
+    "productName": "QurbanApp",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "QurbanApp"
+    }
+  }
+}
+
