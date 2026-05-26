@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   login: (payload) => ipcRenderer.invoke('auth:login', payload),
   changePassword: (payload) => ipcRenderer.invoke('auth:change-password', payload),
+  logout: () => ipcRenderer.invoke('auth:logout'),
   getDashboardStats: () => ipcRenderer.invoke('dashboard:stats'),
 
   listHewan: (q) => ipcRenderer.invoke('hewan:list', q),

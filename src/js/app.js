@@ -110,7 +110,8 @@ function editHewan(h) {
 
 async function hapusHewan(id) {
   if (!confirm('Yakin hapus data hewan ini?')) return;
-  await window.api.deleteHewan(id);
+  const res = await window.api.deleteHewan(id);
+  if (!res?.success) return notify('danger', res?.message || 'Gagal hapus data hewan');
   notify('success', 'Data hewan dihapus');
   await loadHewan();
   await loadDashboard();
@@ -138,7 +139,8 @@ function editPeserta(p) {
 
 async function hapusPeserta(id) {
   if (!confirm('Yakin hapus data peserta ini?')) return;
-  await window.api.deletePeserta(id);
+  const res = await window.api.deletePeserta(id);
+  if (!res?.success) return notify('danger', res?.message || 'Gagal hapus data peserta');
   notify('success', 'Data peserta dihapus');
   await loadPeserta();
   await loadDashboard();
@@ -247,7 +249,7 @@ function bindEvents() {
   }));
 
   qs('logoutBtn').addEventListener('click', () => {
-    clearSession();
+    window.api.logout().finally(() => clearSession());
   });
 
   qs('searchHewan').addEventListener('input', (e) => loadHewan(e.target.value));
@@ -276,7 +278,8 @@ function bindEvents() {
       status: qs('statusHewan').value,
       foto: fotoHewanBase64
     };
-    if (payload.id) await window.api.updateHewan(payload); else await window.api.createHewan(payload);
+    const res = payload.id ? await window.api.updateHewan(payload) : await window.api.createHewan(payload);
+    if (!res?.success) return notify('danger', res?.message || 'Gagal menyimpan data hewan');
     bootstrap.Modal.getInstance(qs('hewanModal')).hide();
     qs('hewanForm').reset(); qs('hewanId').value = ''; fotoHewanBase64 = '';
     notify('success', 'Data hewan tersimpan');
@@ -292,7 +295,8 @@ function bindEvents() {
       no_hp: qs('hpPeserta').value,
       jenis_kurban: qs('jenisKurban').value
     };
-    if (payload.id) await window.api.updatePeserta(payload); else await window.api.createPeserta(payload);
+    const res = payload.id ? await window.api.updatePeserta(payload) : await window.api.createPeserta(payload);
+    if (!res?.success) return notify('danger', res?.message || 'Gagal menyimpan data peserta');
     bootstrap.Modal.getInstance(qs('pesertaModal')).hide();
     qs('pesertaForm').reset(); qs('pesertaId').value = '';
     notify('success', 'Data peserta tersimpan');
@@ -301,13 +305,14 @@ function bindEvents() {
 
   qs('pembayaranForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await window.api.createPembayaran({
+    const res = await window.api.createPembayaran({
       peserta_id: Number(qs('pembayaranPeserta').value),
       jumlah: Number(qs('jumlahBayar').value),
       metode: qs('metodeBayar').value,
       status: qs('statusBayar').value,
       tanggal: new Date().toISOString()
     });
+    if (!res?.success) return notify('danger', res?.message || 'Gagal menambah pembayaran');
     bootstrap.Modal.getInstance(qs('pembayaranModal')).hide();
     qs('pembayaranForm').reset();
     notify('success', 'Pembayaran berhasil ditambahkan');
@@ -384,11 +389,7 @@ function bindEvents() {
       notify('danger', 'Konfirmasi password baru tidak cocok');
       return;
     }
-    const res = await window.api.changePassword({
-      userId: state.user.id,
-      currentPassword,
-      newPassword
-    });
+    const res = await window.api.changePassword({ currentPassword, newPassword });
     notify(res.success ? 'success' : 'danger', res.message);
     if (res.success) qs('changePasswordForm').reset();
   });

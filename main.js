@@ -5,6 +5,7 @@ const { initDatabase } = require('./src/database/db');
 const service = require('./src/database/service');
 
 let mainWindow;
+const authSessions = new Map();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -43,8 +44,24 @@ const safeHandle = (handler) => async (...args) => {
   }
 };
 
-ipcMain.handle('auth:login', safeHandle(async (_, payload) => service.login(payload)));
-ipcMain.handle('auth:change-password', safeHandle(async (_, payload) => service.changePassword(payload)));
+ipcMain.handle('auth:login', safeHandle(async (event, payload) => {
+  const res = service.login(payload);
+  if (res?.success) authSessions.set(event.sender.id, res.data.id);
+  return res;
+}));
+ipcMain.handle('auth:change-password', safeHandle(async (event, payload) => {
+  const userId = authSessions.get(event.sender.id);
+  if (!userId) return { success: false, message: 'Sesi login tidak valid. Silakan login ulang.' };
+  return service.changePassword({
+    userId,
+    currentPassword: payload.currentPassword,
+    newPassword: payload.newPassword
+  });
+}));
+ipcMain.handle('auth:logout', async (event) => {
+  authSessions.delete(event.sender.id);
+  return { success: true };
+});
 ipcMain.handle('dashboard:stats', async () => service.getDashboardStats());
 
 ipcMain.handle('hewan:list', async (_, q) => service.listHewan(q));

@@ -1,20 +1,17 @@
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
 
 function resolveDbPath() {
-  try {
-    const { app } = require('electron');
-    if (app) {
-      const userData = app.getPath('userData');
-      if (!fs.existsSync(userData)) fs.mkdirSync(userData, { recursive: true });
-      return path.join(userData, 'qurbanapp.db');
-    }
-  } catch (_) {
-    // Fallback for non-electron runtime (e.g. simple node checks).
-  }
-  return path.join(__dirname, 'qurbanapp.db');
+  const explicit = process.env.QURBANAPP_DB_PATH;
+  if (explicit) return explicit;
+
+  const appDataBase = process.env.APPDATA || path.join(os.homedir(), '.config');
+  const appDataDir = path.join(appDataBase, 'QurbanApp');
+  if (!fs.existsSync(appDataDir)) fs.mkdirSync(appDataDir, { recursive: true });
+  return path.join(appDataDir, 'qurbanapp.db');
 }
 
 const dbPath = resolveDbPath();
