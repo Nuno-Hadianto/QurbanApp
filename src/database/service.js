@@ -110,6 +110,31 @@ function getDbPath() {
   return dbPath;
 }
 
+function getLaporan({ from, to }) {
+  const fromIso = from ? `${from}T00:00:00.000Z` : null;
+  const toIso = to ? `${to}T23:59:59.999Z` : null;
+  const dateFilter = (field) => {
+    if (fromIso && toIso) return `${field} BETWEEN ? AND ?`;
+    if (fromIso) return `${field} >= ?`;
+    if (toIso) return `${field} <= ?`;
+    return '1=1';
+  };
+  const params = (field) => {
+    if (fromIso && toIso) return [fromIso, toIso];
+    if (fromIso) return [fromIso];
+    if (toIso) return [toIso];
+    return [];
+  };
+
+  const hewan = db.prepare(`SELECT * FROM hewan WHERE ${dateFilter('created_at')} ORDER BY id DESC`).all(...params('created_at'));
+  const peserta = db.prepare(`SELECT * FROM peserta WHERE ${dateFilter('created_at')} ORDER BY id DESC`).all(...params('created_at'));
+  const pembayaran = db.prepare(`SELECT p.*, ps.nama as nama_peserta
+    FROM pembayaran p JOIN peserta ps ON p.peserta_id = ps.id
+    WHERE ${dateFilter('p.tanggal')} ORDER BY p.id DESC`).all(...params('p.tanggal'));
+
+  return { hewan, peserta, pembayaran };
+}
+
 module.exports = {
   login,
   getDashboardStats,
@@ -127,5 +152,6 @@ module.exports = {
   listSapi,
   listPatunganByHewan,
   addPatungan,
-  getDbPath
+  getDbPath,
+  getLaporan
 };
