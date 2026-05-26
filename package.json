@@ -8,11 +8,7 @@
     "start": "electron .",
     "build": "electron-builder"
   },
-  "keywords": [
-    "electron",
-    "qurban",
-    "sqlite"
-  ],
+  "keywords": ["electron", "qurban", "sqlite"],
   "author": "QurbanApp",
   "license": "ISC",
   "dependencies": {
@@ -28,20 +24,9 @@
   "build": {
     "appId": "com.qurbanapp.desktop",
     "productName": "QurbanApp",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "src/**/*",
-      "node_modules/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": "nsis",
-      "target": "nsis"
-    },
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "src/**/*", "package.json"],
+    "win": { "target": "nsis" },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -50,4 +35,3 @@
     }
   }
 }
-
