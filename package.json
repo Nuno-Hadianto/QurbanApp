@@ -31,7 +31,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "QurbanApp"
+      "shortcutName": "QurbanApp",
+      "artifactName": "QurbanAppSetup.exe"
     }
   }
 }
