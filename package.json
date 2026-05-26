@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
+    "release": "npm run clean && npm run build"
   },
   "keywords": ["electron", "qurban", "sqlite"],
   "author": "QurbanApp",
@@ -26,7 +28,7 @@
     "productName": "QurbanApp",
     "directories": { "output": "dist" },
     "files": ["main.js", "preload.js", "src/**/*", "package.json"],
-    "win": { "target": "nsis", "signAndEditExecutable": false },
+    "win": { "target": "nsis", "signAndEditExecutable": false, "icon": "build/icon.ico" },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
