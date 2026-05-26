@@ -137,8 +137,8 @@
     <input type="hidden" id="hewanId" />
     <div class="mb-2"><label>Jenis</label><select id="jenisHewan" class="form-select"><option>Sapi</option><option>Kambing</option></select></div>
     <div class="mb-2"><label>Nama Hewan</label><input id="namaHewan" class="form-control" required /></div>
-    <div class="mb-2"><label>Berat</label><input id="beratHewan" type="number" class="form-control" required /></div>
-    <div class="mb-2"><label>Harga</label><input id="hargaHewan" type="number" class="form-control" required /></div>
+    <div class="mb-2"><label>Berat (kg)</label><input id="beratHewan" type="number" min="1" step="0.1" class="form-control" required /></div>
+    <div class="mb-2"><label>Harga (Rp)</label><input id="hargaHewan" type="number" min="0" step="1000" class="form-control" required /></div>
     <div class="mb-2"><label>Foto Hewan</label><input id="fotoHewan" type="file" accept="image/*" class="form-control" /></div>
     <div class="mb-2"><label>Status</label><select id="statusHewan" class="form-select"><option>tersedia</option><option>dipotong</option><option>selesai</option></select></div>
   </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
@@ -147,13 +147,17 @@
     <input type="hidden" id="pesertaId" />
     <div class="mb-2"><label>Nama</label><input id="namaPeserta" class="form-control" required /></div>
     <div class="mb-2"><label>Alamat</label><textarea id="alamatPeserta" class="form-control" required></textarea></div>
-    <div class="mb-2"><label>No HP</label><input id="hpPeserta" class="form-control" required /></div>
+    <div class="mb-2"><label>No HP</label><input id="hpPeserta" type="text" pattern="[0-9]+" title="Hanya masukkan angka" class="form-control" required /></div>
     <div class="mb-2"><label>Jenis Kurban</label><input id="jenisKurban" class="form-control" required /></div>
   </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
 
   <div class="modal fade" id="pembayaranModal"><div class="modal-dialog"><form id="pembayaranForm" class="modal-content"><div class="modal-header"><h5>Input Pembayaran</h5></div><div class="modal-body">
-    <div class="mb-2"><label>Peserta</label><select id="pembayaranPeserta" class="form-select"></select></div>
-    <div class="mb-2"><label>Jumlah</label><input id="jumlahBayar" type="number" class="form-control" required /></div>
+    <div class="mb-2">
+      <label>Peserta</label>
+      <input list="pembayaranPesertaList" id="pembayaranPesertaInput" class="form-control" placeholder="Cari peserta..." required autocomplete="off">
+      <datalist id="pembayaranPesertaList"></datalist>
+    </div>
+    <div class="mb-2"><label>Jumlah (Rp)</label><input id="jumlahBayar" type="number" min="0" step="1000" class="form-control" required /></div>
     <div class="mb-2"><label>Metode</label><select id="metodeBayar" class="form-select"><option>cash</option><option>transfer</option></select></div>
     <div class="mb-2"><label>Status</label><select id="statusBayar" class="form-select"><option>lunas</option><option>belum lunas</option></select></div>
   </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>

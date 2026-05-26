@@ -126,5 +126,7 @@ ipcMain.handle('settings:restore', safeHandle(async () => {
   if (result.canceled || !result.filePaths.length) return { success: false, message: 'Dibatalkan' };
 
   fs.copyFileSync(result.filePaths[0], service.getPendingRestorePath());
-  return { success: true, message: 'Restore dijadwalkan. Silakan restart aplikasi untuk menerapkan data.' };
+  
+  app.relaunch();
+  app.exit(0);
 }));
