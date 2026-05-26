@@ -154,8 +154,7 @@
   <div class="modal fade" id="pembayaranModal"><div class="modal-dialog"><form id="pembayaranForm" class="modal-content"><div class="modal-header"><h5>Input Pembayaran</h5></div><div class="modal-body">
     <div class="mb-2">
       <label>Peserta</label>
-      <input list="pembayaranPesertaList" id="pembayaranPesertaInput" class="form-control" placeholder="Cari peserta..." required autocomplete="off">
-      <datalist id="pembayaranPesertaList"></datalist>
+      <select id="pembayaranPeserta" class="form-select" required></select>
     </div>
     <div class="mb-2"><label>Jumlah (Rp)</label><input id="jumlahBayar" type="number" min="0" step="1000" class="form-control" required /></div>
     <div class="mb-2"><label>Metode</label><select id="metodeBayar" class="form-select"><option>cash</option><option>transfer</option></select></div>
