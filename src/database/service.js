@@ -85,6 +85,10 @@ function updateHewan(payload) {
 }
 
 function deleteHewan(id) {
+  const usedInPatungan = db.prepare('SELECT COUNT(*) total FROM patungan WHERE hewan_id = ?').get(id).total;
+  if (usedInPatungan > 0) {
+    return { success: false, message: 'Hewan tidak bisa dihapus karena masih dipakai di data patungan.' };
+  }
   db.prepare('DELETE FROM hewan WHERE id = ?').run(id);
   return { success: true, message: 'Data hewan dihapus' };
 }
@@ -106,6 +110,14 @@ function updatePeserta(payload) {
 }
 
 function deletePeserta(id) {
+  const usedInPatungan = db.prepare('SELECT COUNT(*) total FROM patungan WHERE peserta_id = ?').get(id).total;
+  if (usedInPatungan > 0) {
+    return { success: false, message: 'Peserta tidak bisa dihapus karena masih terdaftar di patungan sapi.' };
+  }
+  const usedInPembayaran = db.prepare('SELECT COUNT(*) total FROM pembayaran WHERE peserta_id = ?').get(id).total;
+  if (usedInPembayaran > 0) {
+    return { success: false, message: 'Peserta tidak bisa dihapus karena masih memiliki riwayat pembayaran.' };
+  }
   db.prepare('DELETE FROM peserta WHERE id = ?').run(id);
   return { success: true, message: 'Peserta dihapus' };
 }
