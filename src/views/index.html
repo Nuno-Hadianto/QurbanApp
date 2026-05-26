@@ -65,11 +65,16 @@
 
           <section id="patunganSection" class="view-section d-none">
             <div class="row g-3">
+              <input type="hidden" id="patunganId" />
               <div class="col-4"><select id="sapiSelect" class="form-select"></select></div>
               <div class="col-4"><select id="pesertaPatunganSelect" class="form-select"></select></div>
               <div class="col-2"><select id="slotSelect" class="form-select"></select></div>
-              <div class="col-2"><button id="savePatunganBtn" class="btn btn-emerald w-100">Simpan</button></div>
+              <div class="col-2 d-grid gap-2">
+                <button id="savePatunganBtn" class="btn btn-emerald w-100">Simpan</button>
+                <button id="cancelPatunganEditBtn" class="btn btn-outline-secondary btn-sm d-none">Batal Edit</button>
+              </div>
             </div>
+            <div id="slotGrid" class="row g-2 mt-2"></div>
             <div class="table-wrap mt-3"><table class="table" id="patunganTable"></table></div>
           </section>
 
