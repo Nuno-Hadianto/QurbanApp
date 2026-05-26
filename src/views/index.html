@@ -107,8 +107,19 @@
           </section>
 
           <section id="pengaturanSection" class="view-section d-none">
-            <button id="backupBtn" class="btn btn-emerald me-2">Backup Database</button>
-            <button id="restoreBtn" class="btn btn-outline-warning">Restore Database</button>
+            <div class="mb-3">
+              <button id="backupBtn" class="btn btn-emerald me-2">Backup Database</button>
+              <button id="restoreBtn" class="btn btn-outline-warning">Restore Database</button>
+            </div>
+            <div class="table-wrap">
+              <h6>Ganti Password</h6>
+              <form id="changePasswordForm" class="row g-3 mt-1">
+                <div class="col-md-4"><label class="form-label">Password Saat Ini</label><input id="currentPassword" type="password" class="form-control" required /></div>
+                <div class="col-md-4"><label class="form-label">Password Baru</label><input id="newPassword" type="password" class="form-control" minlength="6" required /></div>
+                <div class="col-md-4"><label class="form-label">Konfirmasi Password Baru</label><input id="confirmPassword" type="password" class="form-control" minlength="6" required /></div>
+                <div class="col-12"><button class="btn btn-emerald">Simpan Password</button></div>
+              </form>
+            </div>
           </section>
         </div>
       </main>

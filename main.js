@@ -36,6 +36,7 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.handle('auth:login', async (_, payload) => service.login(payload));
+ipcMain.handle('auth:change-password', async (_, payload) => service.changePassword(payload));
 ipcMain.handle('dashboard:stats', async () => service.getDashboardStats());
 
 ipcMain.handle('hewan:list', async (_, q) => service.listHewan(q));
