@@ -1,4 +1,4 @@
-const state = { user: null, hewan: [], peserta: [], pembayaran: [] };
+const state = { user: null, hewan: [], peserta: [], pembayaran: [], laporan: { hewan: [], peserta: [], pembayaran: [] } };
 let fotoHewanBase64 = '';
 
 const qs = (id) => document.getElementById(id);
@@ -31,6 +31,7 @@ async function initApp() {
   await loadPeserta();
   await loadPembayaran();
   await setupPatungan();
+  await loadLaporan();
 }
 
 async function loadDashboard() {
@@ -122,6 +123,28 @@ async function setupPatungan() {
   if (sapi.length) await renderPatunganTable();
 }
 
+async function loadLaporan() {
+  const payload = { from: qs('laporanFrom')?.value || '', to: qs('laporanTo')?.value || '' };
+  state.laporan = await window.api.getLaporan(payload);
+
+  const summary = [
+    card('Hewan (Filter)', state.laporan.hewan.length, 'bi-box2-heart'),
+    card('Peserta (Filter)', state.laporan.peserta.length, 'bi-people'),
+    card('Total Bayar (Filter)', rupiah(state.laporan.pembayaran.reduce((a, b) => a + Number(b.jumlah || 0), 0)), 'bi-cash-stack')
+  ].join('');
+  qs('laporanSummary').innerHTML = summary;
+
+  qs('laporanHewanTable').innerHTML = `<thead><tr><th>#</th><th>Kode</th><th>Jenis</th><th>Nama</th><th>Berat</th><th>Harga</th><th>Status</th><th>Tanggal</th></tr></thead><tbody>${
+    state.laporan.hewan.map((h, i) => `<tr><td>${i + 1}</td><td>${h.kode_hewan}</td><td>${h.jenis_hewan}</td><td>${h.nama_hewan}</td><td>${h.berat} kg</td><td>${rupiah(h.harga)}</td><td>${h.status}</td><td>${new Date(h.created_at).toLocaleDateString('id-ID')}</td></tr>`).join('')
+  }</tbody>`;
+  qs('laporanPesertaTable').innerHTML = `<thead><tr><th>#</th><th>Nama</th><th>Alamat</th><th>No HP</th><th>Jenis Kurban</th><th>Tanggal</th></tr></thead><tbody>${
+    state.laporan.peserta.map((p, i) => `<tr><td>${i + 1}</td><td>${p.nama}</td><td>${p.alamat}</td><td>${p.no_hp}</td><td>${p.jenis_kurban}</td><td>${new Date(p.created_at).toLocaleDateString('id-ID')}</td></tr>`).join('')
+  }</tbody>`;
+  qs('laporanPembayaranTable').innerHTML = `<thead><tr><th>#</th><th>Peserta</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Tanggal</th></tr></thead><tbody>${
+    state.laporan.pembayaran.map((p, i) => `<tr><td>${i + 1}</td><td>${p.nama_peserta}</td><td>${rupiah(p.jumlah)}</td><td>${p.metode}</td><td>${p.status}</td><td>${new Date(p.tanggal).toLocaleString('id-ID')}</td></tr>`).join('')
+  }</tbody>`;
+}
+
 async function renderPatunganTable() {
   const hewanId = Number(qs('sapiSelect').value);
   if (!hewanId) return;
@@ -156,6 +179,7 @@ function bindEvents() {
     document.querySelectorAll('.view-section').forEach((s) => s.classList.add('d-none'));
     qs(`${view}Section`).classList.remove('d-none');
     if (view === 'patungan') renderPatunganTable();
+    if (view === 'laporan') loadLaporan();
   }));
 
   qs('logoutBtn').addEventListener('click', () => {
@@ -259,11 +283,33 @@ function bindEvents() {
   qs('exportPdf').addEventListener('click', () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.text('Laporan QurbanApp', 14, 16);
-    doc.text(`Total Hewan: ${state.hewan.length}`, 14, 26);
-    doc.text(`Total Peserta: ${state.peserta.length}`, 14, 34);
-    doc.text(`Total Pembayaran: ${rupiah(state.pembayaran.reduce((a,b)=>a+Number(b.jumlah),0))}`, 14, 42);
+    const from = qs('laporanFrom').value || '-';
+    const to = qs('laporanTo').value || '-';
+    let y = 16;
+    doc.text('Laporan QurbanApp', 14, y); y += 8;
+    doc.text(`Periode: ${from} s/d ${to}`, 14, y); y += 8;
+    doc.text(`Hewan: ${state.laporan.hewan.length} | Peserta: ${state.laporan.peserta.length} | Total Bayar: ${rupiah(state.laporan.pembayaran.reduce((a,b)=>a+Number(b.jumlah),0))}`, 14, y); y += 10;
+
+    doc.text('Data Hewan:', 14, y); y += 6;
+    state.laporan.hewan.slice(0, 20).forEach((h, i) => {
+      doc.text(`${i + 1}. ${h.kode_hewan} | ${h.jenis_hewan} | ${h.nama_hewan} | ${h.status}`, 14, y);
+      y += 6;
+    });
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.text('Data Pembayaran:', 14, y); y += 6;
+    state.laporan.pembayaran.slice(0, 20).forEach((p, i) => {
+      doc.text(`${i + 1}. ${p.nama_peserta} | ${rupiah(p.jumlah)} | ${p.metode} | ${p.status}`, 14, y);
+      y += 6;
+      if (y > 280) { doc.addPage(); y = 20; }
+    });
     doc.save('laporan-qurbanapp.pdf');
+  });
+
+  qs('filterLaporanBtn').addEventListener('click', loadLaporan);
+  qs('resetLaporanBtn').addEventListener('click', async () => {
+    qs('laporanFrom').value = '';
+    qs('laporanTo').value = '';
+    await loadLaporan();
   });
 }
 
