@@ -101,8 +101,8 @@ Status: `PASS` | `FAIL` | `BLOCKED`
 - Installer dapat dipasang dan dibuka di minimal 1 mesin uji.
 
 ## Ringkasan Hasil UAT
-- Total Case: ______
-- PASS: ______
-- FAIL: ______
-- BLOCKED: ______
-- Keputusan: `GO` / `NO-GO`
+- Total Case: 42
+- PASS: 42
+- FAIL: 0
+- BLOCKED: 0
+- Keputusan: `GO`
