@@ -67,6 +67,7 @@ async function initApp() {
   await loadPembayaran();
   await setupPatungan();
   await loadLaporan();
+  await loadDbPath();
 }
 
 async function loadDashboard() {
@@ -212,6 +213,11 @@ function resetPatunganForm() {
   qs('patunganId').value = '';
   qs('savePatunganBtn').textContent = 'Simpan';
   qs('cancelPatunganEditBtn').classList.add('d-none');
+}
+
+async function loadDbPath() {
+  const res = await window.api.getDbPath();
+  qs('dbPathInput').value = res?.path || '-';
 }
 
 function bindEvents() {
@@ -361,6 +367,12 @@ function bindEvents() {
   qs('restoreBtn').addEventListener('click', async () => {
     const res = await window.api.restoreDb();
     notify(res.success ? 'success' : 'warning', res.message);
+  });
+  qs('copyDbPathBtn').addEventListener('click', async () => {
+    const pathVal = qs('dbPathInput').value;
+    if (!pathVal || pathVal === '-') return;
+    await navigator.clipboard.writeText(pathVal);
+    notify('success', 'Path database disalin');
   });
 
   qs('changePasswordForm').addEventListener('submit', async (e) => {

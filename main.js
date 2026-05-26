@@ -72,6 +72,10 @@ ipcMain.handle('settings:backup', async () => {
   return { success: true, message: 'Backup berhasil' };
 });
 
+ipcMain.handle('settings:db-path', async () => {
+  return { path: service.getDbPath() };
+});
+
 ipcMain.handle('settings:restore', async () => {
   const result = await dialog.showOpenDialog({
     title: 'Restore Database',
