@@ -120,6 +120,7 @@ async function setupPatungan() {
   qs('slotSelect').innerHTML = [1,2,3,4,5,6,7].map((s) => `<option value="${s}">Slot ${s}</option>`).join('');
   const sapi = await window.api.listSapi();
   qs('sapiSelect').innerHTML = sapi.map((s) => `<option value="${s.id}">${s.kode_hewan} - ${s.nama_hewan}</option>`).join('');
+  resetPatunganForm();
   if (sapi.length) await renderPatunganTable();
 }
 
@@ -150,11 +151,32 @@ async function renderPatunganTable() {
   if (!hewanId) return;
   const rowsData = await window.api.listPatunganByHewan(hewanId);
   const slotMap = Object.fromEntries(rowsData.map((r) => [r.slot_ke, r]));
+  qs('slotGrid').innerHTML = [1,2,3,4,5,6,7].map((s) => {
+    const r = slotMap[s];
+    return `<div class="col-md-3">
+      <div class="slot-card ${r ? 'terisi' : 'kosong'}">
+        <div class="d-flex justify-content-between">
+          <strong>Slot ${s}</strong>
+          <span class="badge ${r ? 'text-bg-success' : 'text-bg-secondary'}">${r ? 'Terisi' : 'Kosong'}</span>
+        </div>
+        <div class="mt-2 small">${r ? r.nama_peserta : '-'}</div>
+      </div>
+    </div>`;
+  }).join('');
   const rows = [1,2,3,4,5,6,7].map((s) => {
     const r = slotMap[s];
-    return `<tr><td>${s}</td><td>${r ? r.nama_peserta : '-'}</td><td>${r ? 'terisi' : 'kosong'}</td></tr>`;
+    return `<tr>
+      <td>${s}</td><td>${r ? r.nama_peserta : '-'}</td><td>${r ? 'terisi' : 'kosong'}</td>
+      <td>${r ? `<button class="btn btn-sm btn-warning btn-edit-patungan" data-id="${r.id}" data-slot="${r.slot_ke}" data-peserta="${r.peserta_id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-patungan" data-id="${r.id}">Hapus</button>` : '-'}</td>
+    </tr>`;
   }).join('');
-  qs('patunganTable').innerHTML = `<thead><tr><th>Slot</th><th>Peserta</th><th>Status</th></tr></thead><tbody>${rows}</tbody>`;
+  qs('patunganTable').innerHTML = `<thead><tr><th>Slot</th><th>Peserta</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function resetPatunganForm() {
+  qs('patunganId').value = '';
+  qs('savePatunganBtn').textContent = 'Simpan';
+  qs('cancelPatunganEditBtn').classList.add('d-none');
 }
 
 function bindEvents() {
@@ -252,16 +274,42 @@ function bindEvents() {
   });
 
   qs('savePatunganBtn').addEventListener('click', async () => {
-    const res = await window.api.addPatungan({
+    const id = Number(qs('patunganId').value || 0);
+    const payload = {
       hewan_id: Number(qs('sapiSelect').value),
       peserta_id: Number(qs('pesertaPatunganSelect').value),
       slot_ke: Number(qs('slotSelect').value)
-    });
+    };
+    const res = id ? await window.api.updatePatungan({ ...payload, id }) : await window.api.addPatungan(payload);
     notify(res.success ? 'success' : 'danger', res.message);
+    if (res.success) resetPatunganForm();
     await renderPatunganTable();
   });
 
-  qs('sapiSelect').addEventListener('change', renderPatunganTable);
+  qs('cancelPatunganEditBtn').addEventListener('click', () => resetPatunganForm());
+  qs('sapiSelect').addEventListener('change', async () => {
+    resetPatunganForm();
+    await renderPatunganTable();
+  });
+  qs('patunganTable').addEventListener('click', async (e) => {
+    const id = Number(e.target.dataset.id || 0);
+    if (!id) return;
+    if (e.target.classList.contains('btn-edit-patungan')) {
+      qs('patunganId').value = id;
+      qs('slotSelect').value = e.target.dataset.slot;
+      qs('pesertaPatunganSelect').value = e.target.dataset.peserta;
+      qs('savePatunganBtn').textContent = 'Update Slot';
+      qs('cancelPatunganEditBtn').classList.remove('d-none');
+      return;
+    }
+    if (e.target.classList.contains('btn-del-patungan')) {
+      if (!confirm('Yakin kosongkan slot ini?')) return;
+      const res = await window.api.deletePatungan(id);
+      notify(res.success ? 'success' : 'danger', res.message);
+      resetPatunganForm();
+      await renderPatunganTable();
+    }
+  });
   qs('fotoHewan').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
