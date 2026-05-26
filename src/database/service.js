@@ -1,4 +1,5 @@
-const { db, dbPath } = require('./db');
+const { db, dbPath, initDatabase } = require('./db');
+initDatabase();
 
 const now = () => new Date().toISOString();
 
