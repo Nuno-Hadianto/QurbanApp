@@ -18,6 +18,15 @@ function resolveDbPath() {
 }
 
 const dbPath = resolveDbPath();
+const restorePendingPath = `${dbPath}.restore`;
+
+function applyPendingRestoreIfExists() {
+  if (!fs.existsSync(restorePendingPath)) return;
+  fs.copyFileSync(restorePendingPath, dbPath);
+  fs.unlinkSync(restorePendingPath);
+}
+
+applyPendingRestoreIfExists();
 const db = new Database(dbPath);
 
 function initDatabase() {
@@ -106,4 +115,4 @@ function seedData() {
   db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p2, 4200000, 'cash', 'lunas', now);
 }
 
-module.exports = { db, dbPath, initDatabase };
+module.exports = { db, dbPath, restorePendingPath, initDatabase };

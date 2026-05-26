@@ -1,4 +1,4 @@
-const { db, dbPath, initDatabase } = require('./db');
+const { db, dbPath, restorePendingPath, initDatabase } = require('./db');
 const crypto = require('crypto');
 initDatabase();
 
@@ -71,8 +71,8 @@ function listHewan(q = '') {
 }
 
 function createHewan(payload) {
-  const count = db.prepare('SELECT COUNT(*) total FROM hewan').get().total + 1;
-  const kode = `HWN-${String(count).padStart(3, '0')}`;
+  const maxId = db.prepare('SELECT IFNULL(MAX(id), 0) maxId FROM hewan').get().maxId;
+  const kode = `HWN-${String(Number(maxId) + 1).padStart(3, '0')}`;
   const stmt = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   stmt.run(kode, payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, payload.foto || '', now());
   return { success: true, message: 'Data hewan ditambahkan' };
@@ -175,6 +175,10 @@ function getDbPath() {
   return dbPath;
 }
 
+function getPendingRestorePath() {
+  return restorePendingPath;
+}
+
 function getLaporan({ from, to }) {
   const fromIso = from ? `${from}T00:00:00.000Z` : null;
   const toIso = to ? `${to}T23:59:59.999Z` : null;
@@ -221,5 +225,6 @@ module.exports = {
   deletePatungan,
   changePassword,
   getDbPath,
+  getPendingRestorePath,
   getLaporan
 };
