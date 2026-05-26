@@ -1,5 +1,7 @@
 const state = { user: null, hewan: [], peserta: [], pembayaran: [], laporan: { hewan: [], peserta: [], pembayaran: [] } };
 let fotoHewanBase64 = '';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+let sessionGuardStarted = false;
 
 const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
@@ -12,17 +14,50 @@ async function withLoad(fn) { try { toggleLoader(true); await fn(); } finally { 
 function setSession(user) {
   state.user = user;
   localStorage.setItem('sessionUser', JSON.stringify(user));
+  localStorage.setItem('sessionLastActive', String(Date.now()));
   qs('sessionUser').textContent = `${user.nama} (${user.role})`;
 }
 
 function restoreSession() {
   const s = localStorage.getItem('sessionUser');
   if (!s) return;
+  const lastActive = Number(localStorage.getItem('sessionLastActive') || 0);
+  if (!lastActive || (Date.now() - lastActive) > SESSION_TIMEOUT_MS) {
+    clearSession('Sesi berakhir karena tidak ada aktivitas. Silakan login ulang.');
+    return;
+  }
   state.user = JSON.parse(s);
   qs('loginView').classList.add('d-none');
   qs('appView').classList.remove('d-none');
   qs('sessionUser').textContent = `${state.user.nama} (${state.user.role})`;
+  startSessionGuard();
   initApp();
+}
+
+function touchSession() {
+  if (!state.user) return;
+  localStorage.setItem('sessionLastActive', String(Date.now()));
+}
+
+function clearSession(message) {
+  localStorage.removeItem('sessionUser');
+  localStorage.removeItem('sessionLastActive');
+  if (message) alert(message);
+  location.reload();
+}
+
+function startSessionGuard() {
+  if (sessionGuardStarted) return;
+  sessionGuardStarted = true;
+  ['click', 'keydown', 'mousemove'].forEach((evt) => {
+    document.addEventListener(evt, touchSession, { passive: true });
+  });
+  setInterval(() => {
+    const lastActive = Number(localStorage.getItem('sessionLastActive') || 0);
+    if (state.user && lastActive && (Date.now() - lastActive) > SESSION_TIMEOUT_MS) {
+      clearSession('Sesi berakhir karena timeout 30 menit.');
+    }
+  }, 60000);
 }
 
 async function initApp() {
@@ -188,6 +223,7 @@ function bindEvents() {
       setSession(res.data);
       qs('loginView').classList.add('d-none');
       qs('appView').classList.remove('d-none');
+      startSessionGuard();
       notify('success', `Selamat datang, ${res.data.nama}`);
       await initApp();
     });
@@ -205,8 +241,7 @@ function bindEvents() {
   }));
 
   qs('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('sessionUser');
-    location.reload();
+    clearSession();
   });
 
   qs('searchHewan').addEventListener('input', (e) => loadHewan(e.target.value));
@@ -326,6 +361,24 @@ function bindEvents() {
   qs('restoreBtn').addEventListener('click', async () => {
     const res = await window.api.restoreDb();
     notify(res.success ? 'success' : 'warning', res.message);
+  });
+
+  qs('changePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentPassword = qs('currentPassword').value;
+    const newPassword = qs('newPassword').value;
+    const confirmPassword = qs('confirmPassword').value;
+    if (newPassword !== confirmPassword) {
+      notify('danger', 'Konfirmasi password baru tidak cocok');
+      return;
+    }
+    const res = await window.api.changePassword({
+      userId: state.user.id,
+      currentPassword,
+      newPassword
+    });
+    notify(res.success ? 'success' : 'danger', res.message);
+    if (res.success) qs('changePasswordForm').reset();
   });
 
   qs('exportPdf').addEventListener('click', () => {
