@@ -22,6 +22,14 @@ body { background: var(--gray-bg); font-family: 'Segoe UI', sans-serif; }
 .content { min-height: 100vh; }
 .card-stat { border: 0; border-left: 4px solid var(--emerald); border-radius: 12px; }
 .table-wrap { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 8px 20px rgba(0,0,0,.06); }
+.slot-card {
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  padding: 10px 12px;
+}
+.slot-card.terisi { border-left: 4px solid var(--emerald); background: #ecfdf5; }
+.slot-card.kosong { border-left: 4px solid #9ca3af; }
 .login-wrap {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(circle at top right, #d1fae5, #f8fafc);
