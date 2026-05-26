@@ -55,12 +55,12 @@ async function loadHewan(q = '') {
   const rows = state.hewan.map((h, i) => `<tr>
     <td>${i + 1}</td><td>${h.kode_hewan}</td><td>${h.jenis_hewan}</td><td>${h.nama_hewan}</td>
     <td>${h.berat} kg</td><td>${rupiah(h.harga)}</td><td>${h.status}</td>
-    <td><button class="btn btn-sm btn-warning" onclick='editHewan(${JSON.stringify(h)})'>Edit</button> <button class="btn btn-sm btn-danger" onclick='hapusHewan(${h.id})'>Hapus</button></td>
+    <td><button class="btn btn-sm btn-warning btn-edit-hewan" data-id="${h.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-hewan" data-id="${h.id}">Hapus</button></td>
   </tr>`).join('');
   qs('hewanTable').innerHTML = `<thead><tr><th>#</th><th>Kode</th><th>Jenis</th><th>Nama</th><th>Berat</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
-window.editHewan = (h) => {
+function editHewan(h) {
   qs('hewanId').value = h.id;
   qs('jenisHewan').value = h.jenis_hewan;
   qs('namaHewan').value = h.nama_hewan;
@@ -69,15 +69,15 @@ window.editHewan = (h) => {
   qs('statusHewan').value = h.status;
   fotoHewanBase64 = h.foto || '';
   new bootstrap.Modal(qs('hewanModal')).show();
-};
+}
 
-window.hapusHewan = async (id) => {
+async function hapusHewan(id) {
   if (!confirm('Yakin hapus data hewan ini?')) return;
   await window.api.deleteHewan(id);
   notify('success', 'Data hewan dihapus');
   await loadHewan();
   await loadDashboard();
-};
+}
 
 async function loadPeserta(q = '') {
   state.peserta = await window.api.listPeserta(q);
@@ -85,27 +85,27 @@ async function loadPeserta(q = '') {
   qs('pembayaranPeserta').innerHTML = state.peserta.map((p) => `<option value="${p.id}">${p.nama}</option>`).join('');
   const rows = state.peserta.map((p, i) => `<tr>
     <td>${i + 1}</td><td>${p.nama}</td><td>${p.alamat}</td><td>${p.no_hp}</td><td>${p.jenis_kurban}</td>
-    <td><button class="btn btn-sm btn-warning" onclick='editPeserta(${JSON.stringify(p)})'>Edit</button> <button class="btn btn-sm btn-danger" onclick='hapusPeserta(${p.id})'>Hapus</button></td>
+    <td><button class="btn btn-sm btn-warning btn-edit-peserta" data-id="${p.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-peserta" data-id="${p.id}">Hapus</button></td>
   </tr>`).join('');
   qs('pesertaTable').innerHTML = `<thead><tr><th>#</th><th>Nama</th><th>Alamat</th><th>No HP</th><th>Jenis Kurban</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
-window.editPeserta = (p) => {
+function editPeserta(p) {
   qs('pesertaId').value = p.id;
   qs('namaPeserta').value = p.nama;
   qs('alamatPeserta').value = p.alamat;
   qs('hpPeserta').value = p.no_hp;
   qs('jenisKurban').value = p.jenis_kurban;
   new bootstrap.Modal(qs('pesertaModal')).show();
-};
+}
 
-window.hapusPeserta = async (id) => {
+async function hapusPeserta(id) {
   if (!confirm('Yakin hapus data peserta ini?')) return;
   await window.api.deletePeserta(id);
   notify('success', 'Data peserta dihapus');
   await loadPeserta();
   await loadDashboard();
-};
+}
 
 async function loadPembayaran() {
   state.pembayaran = await window.api.listPembayaran();
@@ -165,6 +165,18 @@ function bindEvents() {
 
   qs('searchHewan').addEventListener('input', (e) => loadHewan(e.target.value));
   qs('searchPeserta').addEventListener('input', (e) => loadPeserta(e.target.value));
+  qs('hewanTable').addEventListener('click', async (e) => {
+    const id = Number(e.target.dataset.id);
+    if (!id) return;
+    if (e.target.classList.contains('btn-edit-hewan')) editHewan(state.hewan.find((h) => h.id === id));
+    if (e.target.classList.contains('btn-del-hewan')) await hapusHewan(id);
+  });
+  qs('pesertaTable').addEventListener('click', async (e) => {
+    const id = Number(e.target.dataset.id);
+    if (!id) return;
+    if (e.target.classList.contains('btn-edit-peserta')) editPeserta(state.peserta.find((p) => p.id === id));
+    if (e.target.classList.contains('btn-del-peserta')) await hapusPeserta(id);
+  });
 
   qs('hewanForm').addEventListener('submit', async (e) => {
     e.preventDefault();
