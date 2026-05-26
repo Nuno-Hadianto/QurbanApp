@@ -10,14 +10,19 @@
     "clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
     "release": "npm run clean && npm run build"
   },
-  "keywords": ["electron", "qurban", "sqlite"],
+  "keywords": [
+    "electron",
+    "qurban",
+    "sqlite"
+  ],
   "author": "QurbanApp",
   "license": "ISC",
   "dependencies": {
     "better-sqlite3": "^12.1.1",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
-    "jspdf": "^3.0.3"
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.8"
   },
   "devDependencies": {
     "electron": "^37.0.0",
@@ -26,9 +31,20 @@
   "build": {
     "appId": "com.qurbanapp.desktop",
     "productName": "QurbanApp",
-    "directories": { "output": "dist" },
-    "files": ["main.js", "preload.js", "src/**/*", "package.json"],
-    "win": { "target": "nsis", "signAndEditExecutable": false, "icon": "build/icon.ico" },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "icon": "build/icon.ico"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

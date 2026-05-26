@@ -457,23 +457,47 @@ function bindEvents() {
     const doc = new jsPDF();
     const from = qs('laporanFrom').value || '-';
     const to = qs('laporanTo').value || '-';
-    let y = 16;
-    doc.text('Laporan QurbanApp', 14, y); y += 8;
-    doc.text(`Periode: ${from} s/d ${to}`, 14, y); y += 8;
-    doc.text(`Hewan: ${state.laporan.hewan.length} | Peserta: ${state.laporan.peserta.length} | Total Bayar: ${rupiah(state.laporan.pembayaran.reduce((a,b)=>a+Number(b.jumlah),0))}`, 14, y); y += 10;
+    
+    doc.setFontSize(14);
+    doc.text('Laporan QurbanApp', 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Periode: ${from} s/d ${to}`, 14, 22);
+    doc.text(`Hewan: ${state.laporan.hewan.length} | Peserta: ${state.laporan.peserta.length} | Total Bayar: ${rupiah(state.laporan.pembayaran.reduce((a,b)=>a+Number(b.jumlah),0))}`, 14, 28);
 
-    doc.text('Data Hewan:', 14, y); y += 6;
-    state.laporan.hewan.slice(0, 20).forEach((h, i) => {
-      doc.text(`${i + 1}. ${h.kode_hewan} | ${h.jenis_hewan} | ${h.nama_hewan} | ${h.status}`, 14, y);
-      y += 6;
+    doc.setFontSize(11);
+    doc.text('Data Hewan:', 14, 38);
+    const hewanBody = state.laporan.hewan.map((h, i) => [
+      i + 1, h.kode_hewan, h.jenis_hewan, h.nama_hewan, `${h.berat} kg`, rupiah(h.harga), h.status
+    ]);
+    doc.autoTable({
+      startY: 42,
+      head: [['No', 'Kode', 'Jenis', 'Nama', 'Berat', 'Harga', 'Status']],
+      body: hewanBody,
+      theme: 'striped',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [25, 135, 84] }
     });
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.text('Data Pembayaran:', 14, y); y += 6;
-    state.laporan.pembayaran.slice(0, 20).forEach((p, i) => {
-      doc.text(`${i + 1}. ${p.nama_peserta} | ${rupiah(p.jumlah)} | ${p.metode} | ${p.status}`, 14, y);
-      y += 6;
-      if (y > 280) { doc.addPage(); y = 20; }
+
+    let finalY = doc.lastAutoTable.finalY + 15;
+    if (finalY > 260) {
+      doc.addPage();
+      finalY = 20;
+    }
+
+    doc.setFontSize(11);
+    doc.text('Data Pembayaran:', 14, finalY);
+    const pembayaranBody = state.laporan.pembayaran.map((p, i) => [
+      i + 1, p.nama_peserta, rupiah(p.jumlah), p.metode, p.status, new Date(p.tanggal).toLocaleDateString('id-ID')
+    ]);
+    doc.autoTable({
+      startY: finalY + 4,
+      head: [['No', 'Peserta', 'Jumlah', 'Metode', 'Status', 'Tanggal']],
+      body: pembayaranBody,
+      theme: 'striped',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [25, 135, 84] }
     });
+
     doc.save('laporan-qurbanapp.pdf');
   });
 
