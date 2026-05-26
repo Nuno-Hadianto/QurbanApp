@@ -1,12 +1,57 @@
 const { db, dbPath, initDatabase } = require('./db');
+const crypto = require('crypto');
 initDatabase();
 
 const now = () => new Date().toISOString();
 
 function login({ username, password }) {
-  const user = db.prepare('SELECT id, nama, username, role FROM users WHERE username = ? AND password = ?').get(username, password);
-  if (!user) return { success: false, message: 'Username / password salah' };
-  return { success: true, data: user };
+  const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!row) return { success: false, message: 'Username / password salah' };
+
+  let valid = false;
+  if (isHashedPassword(row.password)) {
+    valid = verifyPassword(password, row.password);
+  } else {
+    valid = row.password === password;
+    if (valid) {
+      const hashed = hashPassword(password);
+      db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, row.id);
+    }
+  }
+
+  if (!valid) return { success: false, message: 'Username / password salah' };
+  return { success: true, data: { id: row.id, nama: row.nama, username: row.username, role: row.role } };
+}
+
+function hashPassword(plain) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(plain, salt, 64).toString('hex');
+  return `scrypt$${salt}$${hash}`;
+}
+
+function verifyPassword(plain, stored) {
+  const [algo, salt, hash] = String(stored).split('$');
+  if (algo !== 'scrypt' || !salt || !hash) return false;
+  const hashVerify = crypto.scryptSync(plain, salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashVerify, 'hex'));
+}
+
+function isHashedPassword(v) {
+  return String(v).startsWith('scrypt$');
+}
+
+function changePassword({ userId, currentPassword, newPassword }) {
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  if (!row) return { success: false, message: 'User tidak ditemukan' };
+  if (!newPassword || newPassword.length < 6) return { success: false, message: 'Password baru minimal 6 karakter' };
+
+  const validCurrent = isHashedPassword(row.password)
+    ? verifyPassword(currentPassword, row.password)
+    : row.password === currentPassword;
+  if (!validCurrent) return { success: false, message: 'Password saat ini salah' };
+
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashPassword(newPassword), row.id);
+  return { success: true, message: 'Password berhasil diperbarui' };
 }
 
 function getDashboardStats() {
@@ -174,6 +219,7 @@ module.exports = {
   addPatungan,
   updatePatungan,
   deletePatungan,
+  changePassword,
   getDbPath,
   getLaporan
 };

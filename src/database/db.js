@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const Database = require('better-sqlite3');
 
 const dbPath = path.join(__dirname, 'qurbanapp.db');
@@ -66,11 +67,16 @@ function seedData() {
   if (c > 0) return;
 
   const now = new Date().toISOString();
+  const hashPassword = (plain) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(plain, salt, 64).toString('hex');
+    return `scrypt$${salt}$${hash}`;
+  };
 
   const insertUser = db.prepare('INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)');
-  insertUser.run('Admin Qurban', 'admin', 'admin123', 'Admin');
-  insertUser.run('Bendahara Qurban', 'bendahara', 'bendahara123', 'Bendahara');
-  insertUser.run('Panitia Qurban', 'panitia', 'panitia123', 'Panitia');
+  insertUser.run('Admin Qurban', 'admin', hashPassword('admin123'), 'Admin');
+  insertUser.run('Bendahara Qurban', 'bendahara', hashPassword('bendahara123'), 'Bendahara');
+  insertUser.run('Panitia Qurban', 'panitia', hashPassword('panitia123'), 'Panitia');
 
   const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now);
