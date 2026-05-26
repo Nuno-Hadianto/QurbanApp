@@ -51,6 +51,7 @@ ipcMain.handle('peserta:delete', async (_, id) => service.deletePeserta(id));
 ipcMain.handle('pembayaran:list', async () => service.listPembayaran());
 ipcMain.handle('pembayaran:create', async (_, payload) => service.createPembayaran(payload));
 ipcMain.handle('pembayaran:summary', async () => service.getPembayaranSummary());
+ipcMain.handle('laporan:get', async (_, payload) => service.getLaporan(payload || {}));
 
 ipcMain.handle('master:sapi', async () => service.listSapi());
 ipcMain.handle('patungan:list', async (_, hewanId) => service.listPatunganByHewan(hewanId));

@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   listPembayaran: () => ipcRenderer.invoke('pembayaran:list'),
   createPembayaran: (payload) => ipcRenderer.invoke('pembayaran:create', payload),
   getPembayaranSummary: () => ipcRenderer.invoke('pembayaran:summary'),
+  getLaporan: (payload) => ipcRenderer.invoke('laporan:get', payload),
 
   listSapi: () => ipcRenderer.invoke('master:sapi'),
   listPatunganByHewan: (hewanId) => ipcRenderer.invoke('patungan:list', hewanId),
