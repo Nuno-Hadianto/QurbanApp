@@ -126,7 +126,7 @@ async function loadDashboard() {
         labels: ['Sapi', 'Kambing'],
         datasets: [{
           data: [s.jumlahSapi, s.jumlahKambing],
-          backgroundColor: ['#198754', '#ffc107']
+          backgroundColor: ['#10b981', '#f59e0b']
         }]
       },
       options: { responsive: true, maintainAspectRatio: false }
@@ -135,7 +135,20 @@ async function loadDashboard() {
 }
 
 function card(title, value, icon) {
-  return `<div class="col-md-4"><div class="card card-stat shadow-sm"><div class="card-body d-flex justify-content-between"><div><small>${title}</small><h4>${value}</h4></div><i class="bi ${icon} fs-2 text-emerald"></i></div></div></div>`;
+  return `
+    <div class="col-md-4">
+      <div class="card card-stat shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <span class="card-stat-label d-block text-muted mb-1">${title}</span>
+            <h3 class="card-stat-value mb-0 fw-bold">${value}</h3>
+          </div>
+          <div class="card-stat-icon-wrapper">
+            <i class="bi ${icon} fs-4"></i>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function renderHewan() {

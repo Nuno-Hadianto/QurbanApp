@@ -13,22 +13,35 @@
   <div id="loader" class="loader-overlay d-none"><div class="spinner-border text-light"></div></div>
 
   <section id="loginView" class="login-wrap">
+    <div class="login-bg-decor decor-1"></div>
+    <div class="login-bg-decor decor-2"></div>
     <div class="login-card shadow-lg">
-      <h3 class="fw-bold text-emerald">QurbanApp</h3>
-      <p class="text-muted">Login panitia kurban</p>
+      <div class="brand-logo">
+        <i class="bi bi-box2-heart-fill"></i>
+      </div>
+      <h3 class="fw-bold mb-1">QurbanApp</h3>
+      <p class="text-muted small mb-4 text-center">Sistem Informasi Pendataan Kurban</p>
       <form id="loginForm">
-        <div class="mb-3"><label>Username</label><input id="username" class="form-control" required></div>
-        <div class="mb-3"><label>Password</label><input id="password" type="password" class="form-control" required></div>
-        <button class="btn btn-emerald w-100">Masuk</button>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Username</label>
+          <input id="username" class="form-control" placeholder="Masukkan username..." required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-semibold text-muted">Password</label>
+          <input id="password" type="password" class="form-control" placeholder="Masukkan password..." required>
+        </div>
+        <button class="btn btn-emerald w-100 py-2 fw-semibold">Masuk Sistem</button>
       </form>
-      <small class="text-muted d-block mt-3">Username: admin | Password: admin</small>
+      <div class="mt-4 pt-3 border-top text-center text-muted small">
+        Kredensial Default: <code class="d-block mt-1 text-emerald-dark">username: admin | password: admin</code>
+      </div>
     </div>
   </section>
 
   <section id="appView" class="d-none">
     <div class="d-flex">
       <aside class="sidebar p-3">
-        <h5 class="text-white mb-4">QurbanApp</h5>
+        <div class="brand-title text-center mb-4 py-2 border-bottom border-light border-opacity-10">QurbanApp</div>
         <button class="nav-btn active" data-view="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</button>
         <button class="nav-btn" data-view="hewan"><i class="bi bi-box2-heart"></i> Data Hewan</button>
         <button class="nav-btn" data-view="peserta"><i class="bi bi-people"></i> Peserta Kurban</button>
