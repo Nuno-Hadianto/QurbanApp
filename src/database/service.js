@@ -100,9 +100,23 @@ function createHewan(payload) {
 }
 
 function updateHewan(payload) {
+  const oldRow = db.prepare('SELECT foto FROM hewan WHERE id = ?').get(payload.id);
   let filename = payload.foto || '';
   if (filename.startsWith('data:image/')) {
     filename = saveBase64Image(payload.foto);
+    if (oldRow && oldRow.foto && oldRow.foto !== filename) {
+      const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+      const filepath = path.join(uploadDir, oldRow.foto);
+      if (fs.existsSync(filepath)) {
+        try { fs.unlinkSync(filepath); } catch (_) {}
+      }
+    }
+  } else if (!filename && oldRow && oldRow.foto) {
+    const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+    const filepath = path.join(uploadDir, oldRow.foto);
+    if (fs.existsSync(filepath)) {
+      try { fs.unlinkSync(filepath); } catch (_) {}
+    }
   }
   const stmt = db.prepare('UPDATE hewan SET jenis_hewan = ?, nama_hewan = ?, berat = ?, harga = ?, status = ?, foto = ? WHERE id = ?');
   stmt.run(payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, payload.id);
@@ -113,6 +127,14 @@ function deleteHewan(id) {
   const usedInPatungan = db.prepare('SELECT COUNT(*) total FROM patungan WHERE hewan_id = ?').get(id).total;
   if (usedInPatungan > 0) {
     return { success: false, message: 'Hewan tidak bisa dihapus karena masih dipakai di data patungan.' };
+  }
+  const row = db.prepare('SELECT foto FROM hewan WHERE id = ?').get(id);
+  if (row && row.foto) {
+    const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+    const filepath = path.join(uploadDir, row.foto);
+    if (fs.existsSync(filepath)) {
+      try { fs.unlinkSync(filepath); } catch (_) {}
+    }
   }
   db.prepare('DELETE FROM hewan WHERE id = ?').run(id);
   return { success: true, message: 'Data hewan dihapus' };

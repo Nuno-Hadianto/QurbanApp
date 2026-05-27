@@ -34,6 +34,17 @@ function applyPendingRestoreIfExists() {
     fs.unlinkSync(restorePendingPath);
     return;
   }
+  
+  // Hapus file pendamping WAL jika ada sebelum menyalin file baru
+  const walPath = `${dbPath}-wal`;
+  const shmPath = `${dbPath}-shm`;
+  if (fs.existsSync(walPath)) {
+    try { fs.unlinkSync(walPath); } catch (_) {}
+  }
+  if (fs.existsSync(shmPath)) {
+    try { fs.unlinkSync(shmPath); } catch (_) {}
+  }
+
   fs.copyFileSync(restorePendingPath, dbPath);
   fs.unlinkSync(restorePendingPath);
 }

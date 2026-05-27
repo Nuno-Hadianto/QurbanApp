@@ -537,6 +537,26 @@ function bindEvents() {
     }
 
     doc.setFontSize(11);
+    doc.text('Data Peserta:', 14, finalY);
+    const pesertaBody = state.laporan.peserta.map((p, i) => [
+      i + 1, p.nama, p.alamat, p.no_hp, p.jenis_kurban, new Date(p.created_at).toLocaleDateString('id-ID')
+    ]);
+    doc.autoTable({
+      startY: finalY + 4,
+      head: [['No', 'Nama', 'Alamat', 'No HP', 'Jenis Kurban', 'Tanggal']],
+      body: pesertaBody,
+      theme: 'striped',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [25, 135, 84] }
+    });
+
+    finalY = doc.lastAutoTable.finalY + 15;
+    if (finalY > 260) {
+      doc.addPage();
+      finalY = 20;
+    }
+
+    doc.setFontSize(11);
     doc.text('Data Pembayaran:', 14, finalY);
     const pembayaranBody = state.laporan.pembayaran.map((p, i) => [
       i + 1, p.nama_peserta, rupiah(p.jumlah), p.metode, p.status, new Date(p.tanggal).toLocaleDateString('id-ID')
