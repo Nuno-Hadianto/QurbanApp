@@ -9,7 +9,25 @@ const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
 
 function toggleLoader(show) { qs('loader').classList.toggle('d-none', !show); }
-function notify(type, msg) { qs('alertBox').innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">${msg}<button class="btn-close" data-bs-dismiss="alert"></button></div>`; }
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer)
+    toast.addEventListener('mouseleave', Swal.resumeTimer)
+  }
+});
+
+function notify(type, msg) { 
+  const icon = type === 'danger' ? 'error' : (type === 'warning' ? 'warning' : 'success');
+  Toast.fire({ icon, title: msg }); 
+}
+
+let dashboardChart = null;
 
 async function withLoad(fn) { try { toggleLoader(true); await fn(); } finally { toggleLoader(false); } }
 
@@ -78,14 +96,38 @@ async function initApp() {
 async function loadDashboard() {
   const s = await window.api.getDashboardStats();
   qs('dashboardSection').innerHTML = `
-    <div class="row g-3">
+    <div class="row g-3 mb-4">
       ${card('Total Hewan', s.totalHewan, 'bi-box2-heart')}
       ${card('Total Peserta', s.totalPeserta, 'bi-people')}
       ${card('Total Pembayaran', rupiah(s.totalPembayaran), 'bi-cash-stack')}
       ${card('Jumlah Sapi', s.jumlahSapi, 'bi-circle')}
       ${card('Jumlah Kambing', s.jumlahKambing, 'bi-circle-fill')}
       ${card('Selesai Dipotong', s.selesai, 'bi-check2-circle')}
+    </div>
+    <div class="row">
+      <div class="col-md-6 offset-md-3">
+        <div class="card shadow-sm"><div class="card-body">
+          <h6 class="card-title text-center">Proporsi Jenis Hewan</h6>
+          <div style="height: 250px; position: relative;"><canvas id="hewanChart"></canvas></div>
+        </div></div>
+      </div>
     </div>`;
+
+  if (dashboardChart) dashboardChart.destroy();
+  const ctx = qs('hewanChart');
+  if (ctx && typeof Chart !== 'undefined') {
+    dashboardChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Sapi', 'Kambing'],
+        datasets: [{
+          data: [s.jumlahSapi, s.jumlahKambing],
+          backgroundColor: ['#198754', '#ffc107']
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
 }
 
 function card(title, value, icon) {
@@ -416,9 +458,19 @@ function bindEvents() {
   });
   qs('fotoHewan').addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    const preview = qs('previewFotoHewan');
+    if (!file) {
+      preview.classList.add('d-none');
+      preview.src = '';
+      fotoHewanBase64 = '';
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => { fotoHewanBase64 = reader.result; };
+    reader.onload = () => { 
+      fotoHewanBase64 = reader.result; 
+      preview.src = reader.result;
+      preview.classList.remove('d-none');
+    };
     reader.readAsDataURL(file);
   });
 

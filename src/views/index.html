@@ -43,8 +43,6 @@
         </nav>
 
         <div class="p-4">
-          <div id="alertBox"></div>
-
           <section id="dashboardSection" class="view-section"></section>
 
           <section id="hewanSection" class="view-section d-none">
@@ -139,7 +137,8 @@
     <div class="mb-2"><label>Nama Hewan</label><input id="namaHewan" class="form-control" required /></div>
     <div class="mb-2"><label>Berat (kg)</label><input id="beratHewan" type="number" min="1" step="0.1" class="form-control" required /></div>
     <div class="mb-2"><label>Harga (Rp)</label><input id="hargaHewan" type="number" min="0" step="1000" class="form-control" required /></div>
-    <div class="mb-2"><label>Foto Hewan</label><input id="fotoHewan" type="file" accept="image/*" class="form-control" /></div>
+    <div class="mb-2"><label>Foto Hewan</label><input id="fotoHewan" type="file" accept="image/*" class="form-control" />
+    <img id="previewFotoHewan" class="img-fluid mt-2 d-none" style="max-height: 200px; object-fit: contain; border-radius: 8px;" /></div>
     <div class="mb-2"><label>Status</label><select id="statusHewan" class="form-select"><option>tersedia</option><option>dipotong</option><option>selesai</option></select></div>
   </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
 
@@ -165,5 +164,8 @@
   <script src="../../node_modules/jspdf/dist/jspdf.umd.min.js"></script>
   <script src="../../node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="../js/app.js"></script>
+</body>
+</html>
+cript>
 </body>
 </html>
