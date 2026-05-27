@@ -425,11 +425,21 @@ function bindEvents() {
 
   qs('savePatunganBtn').addEventListener('click', async () => {
     const id = Number(qs('patunganId').value || 0);
-    const payload = {
-      hewan_id: Number(qs('sapiSelect').value),
-      peserta_id: Number(qs('pesertaPatunganSelect').value),
-      slot_ke: Number(qs('slotSelect').value)
-    };
+    const hewan_id = Number(qs('sapiSelect').value || 0);
+    const peserta_id = Number(qs('pesertaPatunganSelect').value || 0);
+    const slot_ke = Number(qs('slotSelect').value || 0);
+
+    if (!hewan_id) {
+      return notify('danger', 'Silakan pilih Sapi terlebih dahulu (tambahkan jika belum ada).');
+    }
+    if (!peserta_id) {
+      return notify('danger', 'Silakan pilih Peserta terlebih dahulu (tambahkan jika belum ada).');
+    }
+    if (!slot_ke) {
+      return notify('danger', 'Silakan pilih Slot terlebih dahulu.');
+    }
+
+    const payload = { hewan_id, peserta_id, slot_ke };
     const res = id ? await window.api.updatePatungan({ ...payload, id }) : await window.api.addPatungan(payload);
     notify(res.success ? 'success' : 'danger', res.message);
     if (res.success) resetPatunganForm();
