@@ -95,6 +95,8 @@ async function initApp() {
 
 async function loadDashboard() {
   const s = await window.api.getDashboardStats();
+  const hasData = (s.jumlahSapi > 0 || s.jumlahKambing > 0);
+
   qs('dashboardSection').innerHTML = `
     <div class="row g-3 mb-4">
       ${card('Total Hewan', s.totalHewan, 'bi-box2-heart')}
@@ -108,14 +110,16 @@ async function loadDashboard() {
       <div class="col-md-6 offset-md-3">
         <div class="card shadow-sm"><div class="card-body">
           <h6 class="card-title text-center">Proporsi Jenis Hewan</h6>
-          <div style="height: 250px; position: relative;"><canvas id="hewanChart"></canvas></div>
+          <div style="height: 250px; position: relative;" class="d-flex align-items-center justify-content-center">
+            ${hasData ? '<canvas id="hewanChart"></canvas>' : '<span class="text-muted small">Tidak ada data hewan kurban untuk menampilkan grafik</span>'}
+          </div>
         </div></div>
       </div>
     </div>`;
 
   if (dashboardChart) dashboardChart.destroy();
   const ctx = qs('hewanChart');
-  if (ctx && typeof Chart !== 'undefined') {
+  if (hasData && ctx && typeof Chart !== 'undefined') {
     dashboardChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
