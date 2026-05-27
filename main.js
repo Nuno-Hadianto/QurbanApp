@@ -40,6 +40,55 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+let isQuitting = false;
+app.on('before-quit', async (event) => {
+  if (isQuitting) return;
+  event.preventDefault();
+
+  try {
+    const dbPath = service.getDbPath();
+    const dbDir = path.dirname(dbPath);
+    const backupsDir = path.join(dbDir, 'backups');
+
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir, { recursive: true });
+    }
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+
+    const backupName = `qurbanapp-autobackup-${yyyy}${mm}${dd}-${hh}${min}${ss}.db`;
+    const backupPath = path.join(backupsDir, backupName);
+
+    // Jalankan SQLite backup secara asinkron
+    await db.backup(backupPath);
+
+    // Pertahankan hanya 5 file backup otomatis terbaru
+    const files = fs.readdirSync(backupsDir)
+      .filter(f => f.startsWith('qurbanapp-autobackup-') && f.endsWith('.db'))
+      .map(f => ({ name: f, time: fs.statSync(path.join(backupsDir, f)).mtime.getTime() }))
+      .sort((a, b) => b.time - a.time);
+
+    if (files.length > 5) {
+      for (let i = 5; i < files.length; i++) {
+        try {
+          fs.unlinkSync(path.join(backupsDir, files[i].name));
+        } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.error('Backup otomatis gagal:', err);
+  } finally {
+    isQuitting = true;
+    app.quit();
+  }
+});
+
 const safeHandle = (handler) => async (...args) => {
   try {
     return await handler(...args);
