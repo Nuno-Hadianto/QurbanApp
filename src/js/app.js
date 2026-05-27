@@ -619,6 +619,30 @@ function parseCSVToPeserta(csvText) {
   return results;
 }
 
+function convertToCSV(array, headers) {
+  const headerKeys = Object.keys(headers);
+  const csvContent = [
+    headerKeys.map(key => `"${String(headers[key]).replace(/"/g, '""')}"`).join(','),
+    ...array.map(row => headerKeys.map(fieldName => {
+      const val = row[fieldName];
+      return `"${String(val === undefined || val === null ? '' : val).replace(/"/g, '""')}"`;
+    }).join(','))
+  ].join('\r\n');
+  return csvContent;
+}
+
+function downloadCSVFile(csvContent, filename) {
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 function bindEvents() {
   qs('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -870,6 +894,62 @@ function bindEvents() {
     const res = await window.api.changePassword({ currentPassword, newPassword });
     notify(res.success ? 'success' : 'danger', res.message);
     if (res.success) qs('changePasswordForm').reset();
+  });
+
+  qs('exportCsv').addEventListener('click', () => {
+    const from = qs('laporanFrom').value || 'Mulai';
+    const to = qs('laporanTo').value || 'Selesai';
+    const dateStr = `${from}_sd_${to}`;
+
+    Swal.fire({
+      title: 'Ekspor Laporan CSV',
+      html: `
+        <p class="text-muted small text-center">Pilih jenis data laporan yang ingin diekspor ke format CSV sesuai filter saat ini:</p>
+        <div class="d-grid gap-2 mt-3">
+          <button id="btnExportPeserta" class="btn btn-emerald text-start py-2"><i class="bi bi-people-fill me-2"></i> Ekspor Data Peserta</button>
+          <button id="btnExportHewan" class="btn btn-gold text-start py-2"><i class="bi bi-box2-heart-fill me-2"></i> Ekspor Data Hewan</button>
+          <button id="btnExportPembayaran" class="btn btn-outline-dark text-start py-2"><i class="bi bi-cash-stack me-2"></i> Ekspor Data Pembayaran</button>
+        </div>
+      `,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'Batal',
+      didOpen: () => {
+        const content = Swal.getHtmlContainer();
+        content.querySelector('#btnExportPeserta').addEventListener('click', () => {
+          Swal.close();
+          if (!state.laporan.peserta || state.laporan.peserta.length === 0) {
+            return notify('warning', 'Tidak ada data peserta kurban dalam filter laporan saat ini');
+          }
+          const headers = { nama: 'Nama', alamat: 'Alamat', no_hp: 'No HP', jenis_kurban: 'Jenis Kurban', created_at: 'Tanggal Terdaftar' };
+          const csv = convertToCSV(state.laporan.peserta, headers);
+          downloadCSVFile(csv, `Rekap_Peserta_${dateStr}.csv`);
+          notify('success', 'Data peserta kurban berhasil diekspor ke CSV');
+        });
+
+        content.querySelector('#btnExportHewan').addEventListener('click', () => {
+          Swal.close();
+          if (!state.laporan.hewan || state.laporan.hewan.length === 0) {
+            return notify('warning', 'Tidak ada data hewan kurban dalam filter laporan saat ini');
+          }
+          const headers = { kode_hewan: 'Kode Hewan', jenis_hewan: 'Jenis', nama_hewan: 'Nama', berat: 'Berat (kg)', harga: 'Harga (Rp)', status: 'Status' };
+          const csv = convertToCSV(state.laporan.hewan, headers);
+          downloadCSVFile(csv, `Rekap_Hewan_${dateStr}.csv`);
+          notify('success', 'Data hewan kurban berhasil diekspor ke CSV');
+        });
+
+        content.querySelector('#btnExportPembayaran').addEventListener('click', () => {
+          Swal.close();
+          if (!state.laporan.pembayaran || state.laporan.pembayaran.length === 0) {
+            return notify('warning', 'Tidak ada data riwayat pembayaran dalam filter laporan saat ini');
+          }
+          const headers = { nama_peserta: 'Nama Peserta', jumlah: 'Jumlah (Rp)', metode: 'Metode', status: 'Status', tanggal: 'Tanggal Transaksi' };
+          const csv = convertToCSV(state.laporan.pembayaran, headers);
+          downloadCSVFile(csv, `Rekap_Pembayaran_${dateStr}.csv`);
+          notify('success', 'Data riwayat pembayaran berhasil diekspor ke CSV');
+        });
+      }
+    });
   });
 
   qs('exportPdf').addEventListener('click', () => {
