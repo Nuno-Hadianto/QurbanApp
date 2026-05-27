@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { initDatabase } = require('./src/database/db');
+const { db, initDatabase } = require('./src/database/db');
 const service = require('./src/database/service');
 
 let mainWindow;
@@ -108,7 +108,7 @@ ipcMain.handle('settings:backup', safeHandle(async () => {
   });
   if (result.canceled || !result.filePath) return { success: false, message: 'Dibatalkan' };
 
-  fs.copyFileSync(service.getDbPath(), result.filePath);
+  await db.backup(result.filePath);
   return { success: true, message: 'Backup berhasil' };
 }));
 
