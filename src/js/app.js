@@ -221,7 +221,7 @@ async function setupPatungan() {
   const sapi = await window.api.listSapi();
   qs('sapiSelect').innerHTML = sapi.map((s) => `<option value="${s.id}">${s.kode_hewan} - ${s.nama_hewan}</option>`).join('');
   resetPatunganForm();
-  if (sapi.length) await renderPatunganTable();
+  await renderPatunganTable();
 }
 
 async function loadLaporan() {
@@ -248,7 +248,11 @@ async function loadLaporan() {
 
 async function renderPatunganTable() {
   const hewanId = Number(qs('sapiSelect').value);
-  if (!hewanId) return;
+  if (!hewanId) {
+    qs('slotGrid').innerHTML = '<div class="col-12 text-muted text-center py-3">Pilih atau tambahkan hewan Sapi terlebih dahulu.</div>';
+    qs('patunganTable').innerHTML = '<tbody><tr><td colspan="4" class="text-center text-muted">Tidak ada data patungan</td></tr></tbody>';
+    return;
+  }
   const rowsData = await window.api.listPatunganByHewan(hewanId);
   const slotMap = Object.fromEntries(rowsData.map((r) => [r.slot_ke, r]));
   qs('slotGrid').innerHTML = [1,2,3,4,5,6,7].map((s) => {
