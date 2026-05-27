@@ -33,15 +33,15 @@ async function withLoad(fn) { try { toggleLoader(true); await fn(); } finally { 
 
 function setSession(user) {
   state.user = user;
-  localStorage.setItem('sessionUser', JSON.stringify(user));
-  localStorage.setItem('sessionLastActive', String(Date.now()));
+  sessionStorage.setItem('sessionUser', JSON.stringify(user));
+  sessionStorage.setItem('sessionLastActive', String(Date.now()));
   qs('sessionUser').textContent = `${user.nama} (${user.role})`;
 }
 
 function restoreSession() {
-  const s = localStorage.getItem('sessionUser');
+  const s = sessionStorage.getItem('sessionUser');
   if (!s) return;
-  const lastActive = Number(localStorage.getItem('sessionLastActive') || 0);
+  const lastActive = Number(sessionStorage.getItem('sessionLastActive') || 0);
   if (!lastActive || (Date.now() - lastActive) > SESSION_TIMEOUT_MS) {
     clearSession('Sesi berakhir karena tidak ada aktivitas. Silakan login ulang.');
     return;
@@ -59,12 +59,12 @@ function touchSession() {
   const now = Date.now();
   if ((now - lastSessionTouch) < SESSION_TOUCH_THROTTLE_MS) return;
   lastSessionTouch = now;
-  localStorage.setItem('sessionLastActive', String(Date.now()));
+  sessionStorage.setItem('sessionLastActive', String(Date.now()));
 }
 
 function clearSession(message) {
-  localStorage.removeItem('sessionUser');
-  localStorage.removeItem('sessionLastActive');
+  sessionStorage.removeItem('sessionUser');
+  sessionStorage.removeItem('sessionLastActive');
   if (message) alert(message);
   location.reload();
 }
@@ -76,7 +76,7 @@ function startSessionGuard() {
     document.addEventListener(evt, touchSession, { passive: true });
   });
   setInterval(() => {
-    const lastActive = Number(localStorage.getItem('sessionLastActive') || 0);
+    const lastActive = Number(sessionStorage.getItem('sessionLastActive') || 0);
     if (state.user && lastActive && (Date.now() - lastActive) > SESSION_TIMEOUT_MS) {
       clearSession('Sesi berakhir karena timeout 30 menit.');
     }
