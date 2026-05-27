@@ -112,9 +112,7 @@ function seedData() {
 
   const seedTransaction = db.transaction(() => {
     const insertUser = db.prepare('INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)');
-    insertUser.run('Admin Qurban', 'admin', hashPassword('admin123'), 'Admin');
-    insertUser.run('Bendahara Qurban', 'bendahara', hashPassword('bendahara123'), 'Bendahara');
-    insertUser.run('Panitia Qurban', 'panitia', hashPassword('panitia123'), 'Panitia');
+    insertUser.run('Admin Qurban', 'admin', hashPassword('admin'), 'Admin');
 
     const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now);
