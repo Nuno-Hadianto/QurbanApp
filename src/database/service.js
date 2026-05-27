@@ -84,10 +84,32 @@ function getDashboardStats() {
   return { totalHewan, totalPeserta, totalPembayaran, jumlahSapi, jumlahKambing, selesai };
 }
 
+
+function getHewanPhotoBase64(filename) {
+  if (!filename) return '';
+  const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+  const filepath = path.join(uploadDir, filename);
+  if (fs.existsSync(filepath)) {
+    try {
+      const ext = path.extname(filename).toLowerCase();
+      const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
+      const base64 = fs.readFileSync(filepath, { encoding: 'base64' });
+      return `data:${mime};base64,${base64}`;
+    } catch (_) {
+      return '';
+    }
+  }
+  return '';
+}
+
 function listHewan(q = '') {
-  return db.prepare(`SELECT * FROM hewan
+  const rows = db.prepare(`SELECT * FROM hewan
     WHERE kode_hewan LIKE ? OR nama_hewan LIKE ? OR jenis_hewan LIKE ?
     ORDER BY id DESC`).all(`%${q}%`, `%${q}%`, `%${q}%`);
+  return rows.map(r => ({
+    ...r,
+    foto: getHewanPhotoBase64(r.foto)
+  }));
 }
 
 function createHewan(payload) {
@@ -101,23 +123,35 @@ function createHewan(payload) {
 
 function updateHewan(payload) {
   const oldRow = db.prepare('SELECT foto FROM hewan WHERE id = ?').get(payload.id);
-  let filename = payload.foto || '';
-  if (filename.startsWith('data:image/')) {
-    filename = saveBase64Image(payload.foto);
-    if (oldRow && oldRow.foto && oldRow.foto !== filename) {
+  let filename = oldRow ? oldRow.foto : '';
+  
+  if (payload.foto) {
+    if (payload.foto.startsWith('data:image/')) {
+      const oldBase64 = oldRow && oldRow.foto ? getHewanPhotoBase64(oldRow.foto) : '';
+      if (payload.foto !== oldBase64) {
+        filename = saveBase64Image(payload.foto);
+        if (oldRow && oldRow.foto) {
+          const uploadDir = path.join(path.dirname(dbPath), 'uploads');
+          const filepath = path.join(uploadDir, oldRow.foto);
+          if (fs.existsSync(filepath)) {
+            try { fs.unlinkSync(filepath); } catch (_) {}
+          }
+        }
+      }
+    } else {
+      filename = payload.foto;
+    }
+  } else {
+    filename = '';
+    if (oldRow && oldRow.foto) {
       const uploadDir = path.join(path.dirname(dbPath), 'uploads');
       const filepath = path.join(uploadDir, oldRow.foto);
       if (fs.existsSync(filepath)) {
         try { fs.unlinkSync(filepath); } catch (_) {}
       }
     }
-  } else if (!filename && oldRow && oldRow.foto) {
-    const uploadDir = path.join(path.dirname(dbPath), 'uploads');
-    const filepath = path.join(uploadDir, oldRow.foto);
-    if (fs.existsSync(filepath)) {
-      try { fs.unlinkSync(filepath); } catch (_) {}
-    }
   }
+
   const stmt = db.prepare('UPDATE hewan SET jenis_hewan = ?, nama_hewan = ?, berat = ?, harga = ?, status = ?, foto = ? WHERE id = ?');
   stmt.run(payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, payload.id);
   return { success: true, message: 'Data hewan diperbarui' };

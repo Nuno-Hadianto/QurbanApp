@@ -139,12 +139,24 @@ function card(title, value, icon) {
 }
 
 function renderHewan() {
-  const rows = state.hewan.map((h, i) => `<tr>
-    <td>${i + 1}</td><td>${h.kode_hewan}</td><td>${h.jenis_hewan}</td><td>${h.nama_hewan}</td>
-    <td>${h.berat} kg</td><td>${rupiah(h.harga)}</td><td>${h.status}</td>
-    <td><button class="btn btn-sm btn-warning btn-edit-hewan" data-id="${h.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-hewan" data-id="${h.id}">Hapus</button></td>
-  </tr>`).join('');
-  qs('hewanTable').innerHTML = `<thead><tr><th>#</th><th>Kode</th><th>Jenis</th><th>Nama</th><th>Berat</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+  const rows = state.hewan.map((h, i) => {
+    const imgHtml = h.foto 
+      ? `<img src="${h.foto}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #dee2e6;" />` 
+      : `<span class="text-muted small">No Photo</span>`;
+    const badgeClass = h.status === 'tersedia' ? 'bg-success' : (h.status === 'dipotong' ? 'bg-warning' : 'bg-secondary');
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${imgHtml}</td>
+      <td>${h.kode_hewan}</td>
+      <td>${h.jenis_hewan}</td>
+      <td>${h.nama_hewan}</td>
+      <td>${h.berat} kg</td>
+      <td>${rupiah(h.harga)}</td>
+      <td><span class="badge ${badgeClass}">${h.status}</span></td>
+      <td><button class="btn btn-sm btn-warning btn-edit-hewan" data-id="${h.id}">Edit</button> <button class="btn btn-sm btn-danger btn-del-hewan" data-id="${h.id}">Hapus</button></td>
+    </tr>`;
+  }).join('');
+  qs('hewanTable').innerHTML = `<thead><tr><th>#</th><th>Foto</th><th>Kode</th><th>Jenis</th><th>Nama</th><th>Berat</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 async function loadHewan(q = '') {
@@ -160,6 +172,17 @@ function editHewan(h) {
   qs('hargaHewan').value = h.harga;
   qs('statusHewan').value = h.status;
   fotoHewanBase64 = h.foto || '';
+
+  const preview = qs('previewFotoHewan');
+  if (fotoHewanBase64) {
+    preview.src = fotoHewanBase64;
+    preview.classList.remove('d-none');
+  } else {
+    preview.src = '';
+    preview.classList.add('d-none');
+  }
+  qs('fotoHewan').value = '';
+
   new bootstrap.Modal(qs('hewanModal')).show();
 }
 
@@ -596,6 +619,16 @@ function bindEvents() {
     qs('laporanFrom').value = '';
     qs('laporanTo').value = '';
     await loadLaporan();
+  });
+
+  qs('hewanModal').addEventListener('show.bs.modal', (e) => {
+    if (e.relatedTarget) {
+      qs('hewanForm').reset();
+      qs('hewanId').value = '';
+      fotoHewanBase64 = '';
+      qs('previewFotoHewan').classList.add('d-none');
+      qs('previewFotoHewan').src = '';
+    }
   });
 }
 
