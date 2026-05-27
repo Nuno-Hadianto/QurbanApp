@@ -136,6 +136,7 @@ ipcMain.handle('peserta:list', async (_, q) => service.listPeserta(q));
 ipcMain.handle('peserta:create', secureHandle(async (_, payload) => service.createPeserta(payload)));
 ipcMain.handle('peserta:update', secureHandle(async (_, payload) => service.updatePeserta(payload)));
 ipcMain.handle('peserta:delete', secureHandle(async (_, id) => service.deletePeserta(id)));
+ipcMain.handle('peserta:import-batch', secureHandle(async (_, rows) => service.importPesertaBatch(rows)));
 
 ipcMain.handle('pembayaran:list', async () => service.listPembayaran());
 ipcMain.handle('pembayaran:create', secureHandle(async (_, payload) => service.createPembayaran(payload)));

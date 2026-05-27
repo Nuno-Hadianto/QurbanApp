@@ -70,7 +70,11 @@
           <section id="pesertaSection" class="view-section d-none">
             <div class="d-flex justify-content-between mb-3">
               <input id="searchPeserta" class="form-control w-25" placeholder="Cari peserta..." />
-              <button class="btn btn-emerald" data-bs-toggle="modal" data-bs-target="#pesertaModal">Tambah Peserta</button>
+              <div>
+                <button class="btn btn-outline-emerald me-1" onclick="document.getElementById('csvFileInput').click()"><i class="bi bi-file-earmark-arrow-up"></i> Impor CSV</button>
+                <input type="file" id="csvFileInput" accept=".csv" class="d-none" />
+                <button class="btn btn-emerald" data-bs-toggle="modal" data-bs-target="#pesertaModal">Tambah Peserta</button>
+              </div>
             </div>
             <div class="table-wrap"><table class="table" id="pesertaTable"></table></div>
           </section>

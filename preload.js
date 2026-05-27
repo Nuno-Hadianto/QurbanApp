@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   createPeserta: (payload) => ipcRenderer.invoke('peserta:create', payload),
   updatePeserta: (payload) => ipcRenderer.invoke('peserta:update', payload),
   deletePeserta: (id) => ipcRenderer.invoke('peserta:delete', id),
+  importPesertaBatch: (rows) => ipcRenderer.invoke('peserta:import-batch', rows),
 
   listPembayaran: () => ipcRenderer.invoke('pembayaran:list'),
   createPembayaran: (payload) => ipcRenderer.invoke('pembayaran:create', payload),

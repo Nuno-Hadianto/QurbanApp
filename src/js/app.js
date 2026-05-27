@@ -533,6 +533,82 @@ function generateKwitansiPDF(id) {
   notify('success', `Kwitansi untuk ${p.nama_peserta} berhasil dibuat`);
 }
 
+function parseCSVToPeserta(csvText) {
+  const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+  if (lines.length === 0) return [];
+
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const delim = commaCount >= semiCount ? ',' : ';';
+
+  const splitCSVLine = (line, separator) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === separator && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const headers = splitCSVLine(firstLine, delim).map(h => h.toLowerCase().replace(/["'\.]/g, '').trim());
+
+  let nameIdx = -1;
+  let addressIdx = -1;
+  let phoneIdx = -1;
+  let typeIdx = -1;
+
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    if (h === 'nama' || h === 'name' || h === 'nama peserta') nameIdx = i;
+    else if (h === 'alamat' || h === 'address') addressIdx = i;
+    else if (h === 'no hp' || h === 'hp' || h === 'no. hp' || h === 'telepon' || h === 'phone' || h === 'no telp' || h === 'nohp') phoneIdx = i;
+    else if (h === 'jenis kurban' || h === 'jenis' || h === 'kurban' || h === 'jenis_kurban') typeIdx = i;
+  }
+
+  const startLine = (nameIdx !== -1) ? 1 : 0;
+  if (nameIdx === -1) {
+    nameIdx = 0;
+    addressIdx = headers.length > 1 ? 1 : -1;
+    phoneIdx = headers.length > 2 ? 2 : -1;
+    typeIdx = headers.length > 3 ? 3 : -1;
+  }
+
+  const results = [];
+  for (let i = startLine; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i], delim);
+    if (cols.length === 0 || !cols[nameIdx]) continue;
+
+    const nama = cols[nameIdx].replace(/^["']|["']$/g, '').trim();
+    if (!nama) continue;
+
+    const alamat = addressIdx !== -1 && cols[addressIdx] ? cols[addressIdx].replace(/^["']|["']$/g, '').trim() : '';
+    const no_hp = phoneIdx !== -1 && cols[phoneIdx] ? cols[phoneIdx].replace(/[^0-9]/g, '').trim() : '';
+    
+    let jenis_kurban = 'Kambing Pribadi';
+    if (typeIdx !== -1 && cols[typeIdx]) {
+      const val = cols[typeIdx].toLowerCase();
+      if (val.includes('sapi') || val.includes('patungan')) {
+        jenis_kurban = 'Patungan Sapi';
+      }
+    }
+
+    results.push({ nama, alamat, no_hp, jenis_kurban });
+  }
+
+  return results;
+}
+
 function bindEvents() {
   qs('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -565,6 +641,36 @@ function bindEvents() {
 
   qs('searchHewan').addEventListener('input', (e) => loadHewan(e.target.value));
   qs('searchPeserta').addEventListener('input', (e) => loadPeserta(e.target.value));
+  qs('csvFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    qs('csvFileInput').value = '';
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const parsedData = parseCSVToPeserta(text);
+      if (parsedData.length === 0) {
+        notify('danger', 'Tidak ada data peserta kurban yang valid di berkas CSV');
+        return;
+      }
+
+      const confirmMsg = `Ditemukan ${parsedData.length} data peserta di berkas CSV. Apakah Anda yakin ingin mengimpor data ini secara massal?`;
+      if (!confirm(confirmMsg)) return;
+
+      await withLoad(async () => {
+        const res = await window.api.importPesertaBatch(parsedData);
+        if (res.success) {
+          notify('success', res.message);
+          await loadPeserta();
+          await loadDashboard();
+        } else {
+          notify('danger', res.message);
+        }
+      });
+    };
+    reader.readAsText(file);
+  });
   qs('hewanTable').addEventListener('click', async (e) => {
     const id = Number(e.target.dataset.id);
     if (!id) return;

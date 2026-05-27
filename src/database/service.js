@@ -324,6 +324,35 @@ function getLaporan({ from, to }) {
   return { hewan, peserta, pembayaran };
 }
 
+function importPesertaBatch(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { success: false, message: 'Data kosong atau tidak valid' };
+  }
+
+  const insert = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)');
+  
+  const insertTransaction = db.transaction((data) => {
+    let imported = 0;
+    for (const r of data) {
+      if (!r.nama) continue;
+      const alamat = r.alamat || '';
+      const no_hp = r.no_hp || '';
+      const jenis_kurban = r.jenis_kurban || 'Kambing Pribadi';
+      
+      insert.run(r.nama, alamat, no_hp, jenis_kurban, now());
+      imported++;
+    }
+    return imported;
+  });
+
+  try {
+    const count = insertTransaction(rows);
+    return { success: true, message: `${count} data peserta berhasil diimpor` };
+  } catch (err) {
+    return { success: false, message: `Gagal mengimpor data: ${err.message}` };
+  }
+}
+
 module.exports = {
   login,
   getDashboardStats,
@@ -347,5 +376,6 @@ module.exports = {
   changePassword,
   getDbPath,
   getPendingRestorePath,
-  getLaporan
+  getLaporan,
+  importPesertaBatch
 };
