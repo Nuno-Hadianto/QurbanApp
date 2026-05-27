@@ -93,6 +93,19 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-sm);
 }
 
+.btn-outline-emerald {
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  background: transparent;
+}
+.btn-outline-emerald:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
 /* Form Controls */
 .form-control, .form-select {
   font-family: 'Plus Jakarta Sans', sans-serif;

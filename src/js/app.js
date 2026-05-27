@@ -8,6 +8,37 @@ let lastSessionTouch = 0;
 const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
 
+function terbilang(nilai) {
+  const bilangan = [
+    '', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima',
+    'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'
+  ];
+  nilai = Math.floor(Math.abs(nilai));
+  let temp = '';
+  if (nilai < 12) {
+    temp = ' ' + bilangan[nilai];
+  } else if (nilai < 20) {
+    temp = terbilang(nilai - 10) + ' Belas';
+  } else if (nilai < 100) {
+    temp = terbilang(nilai / 10) + ' Puluh' + terbilang(nilai % 10);
+  } else if (nilai < 200) {
+    temp = ' Seratus' + terbilang(nilai - 100);
+  } else if (nilai < 1000) {
+    temp = terbilang(nilai / 100) + ' Ratus' + terbilang(nilai % 100);
+  } else if (nilai < 2000) {
+    temp = ' Seribu' + terbilang(nilai - 1000);
+  } else if (nilai < 1000000) {
+    temp = terbilang(nilai / 1000) + ' Ribu' + terbilang(nilai % 1000);
+  } else if (nilai < 1000000000) {
+    temp = terbilang(nilai / 1000000) + ' Juta' + terbilang(nilai % 1000000);
+  } else if (nilai < 1000000000000) {
+    temp = terbilang(nilai / 1000000000) + ' Miliar' + terbilang(nilai % 1000000000);
+  } else if (nilai < 1000000000000000) {
+    temp = terbilang(nilai / 1000000000000) + ' Triliun' + terbilang(nilai % 1000000000000);
+  }
+  return temp.trim();
+}
+
 function toggleLoader(show) { qs('loader').classList.toggle('d-none', !show); }
 
 const Toast = Swal.mixin({
@@ -244,10 +275,22 @@ async function hapusPeserta(id) {
 }
 
 function renderPembayaran() {
-  const rows = state.pembayaran.map((p, i) => `<tr>
-    <td>${i + 1}</td><td>${p.nama_peserta}</td><td>${rupiah(p.jumlah)}</td><td>${p.metode}</td><td>${p.status}</td><td>${new Date(p.tanggal).toLocaleString('id-ID')}</td>
-    <td><button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button></td>
-  </tr>`).join('');
+  const rows = state.pembayaran.map((p, i) => {
+    const badgeStatus = p.status === 'lunas' ? 'bg-success' : 'bg-warning text-dark';
+    const badgeMetode = p.metode === 'transfer' ? 'bg-info text-dark' : 'bg-secondary';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${p.nama_peserta}</td>
+      <td>${rupiah(p.jumlah)}</td>
+      <td><span class="badge ${badgeMetode} text-capitalize">${p.metode}</span></td>
+      <td><span class="badge ${badgeStatus} text-capitalize">${p.status}</span></td>
+      <td>${new Date(p.tanggal).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-emerald btn-print-kwitansi me-1" data-id="${p.id}"><i class="bi bi-printer"></i> Kwitansi</button>
+        <button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button>
+      </td>
+    </tr>`;
+  }).join('');
   qs('pembayaranTable').innerHTML = `<thead><tr><th>#</th><th>Peserta</th><th>Jumlah</th><th>Metode</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
@@ -355,6 +398,141 @@ async function copyTextSafe(text) {
   return ok;
 }
 
+function generateKwitansiPDF(id) {
+  const p = state.pembayaran.find(item => item.id === id);
+  if (!p) {
+    notify('danger', 'Data pembayaran tidak ditemukan');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+
+  // 1. Header (Kop Kwitansi)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(5, 150, 105);
+  doc.text('PANITIA KURBAN', 12, 20);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100);
+  doc.text('Aplikasi Pendataan Kurban Mandiri - QurbanApp', 12, 25);
+
+  doc.setDrawColor(5, 150, 105);
+  doc.setLineWidth(0.8);
+  doc.line(12, 28, 136, 28);
+  
+  doc.setDrawColor(200);
+  doc.setLineWidth(0.2);
+  doc.line(12, 29.5, 136, 29.5);
+
+  // 2. Title of Document
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42);
+  doc.text('KWITANSI PEMBAYARAN', 74, 42, { align: 'center' });
+
+  // 3. Receipt Metadata
+  const dateObj = new Date(p.tanggal);
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  const invoiceNum = `KW/${yyyy}${mm}${dd}/${String(p.id).padStart(4, '0')}`;
+  const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(120);
+  doc.text(`No. Kwitansi: ${invoiceNum}`, 12, 50);
+  doc.text(`Tanggal: ${formattedDate}`, 136, 50, { align: 'right' });
+
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.2);
+  doc.line(12, 53, 136, 53);
+
+  // 4. Receipt details grid
+  let currentY = 62;
+
+  const drawRow = (label, value, isValueBold = false, isValueItalic = false) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(100);
+    doc.text(label, 12, currentY);
+
+    doc.setTextColor(15, 23, 42);
+    if (isValueBold && isValueItalic) doc.setFont('helvetica', 'bolditalic');
+    else if (isValueBold) doc.setFont('helvetica', 'bold');
+    else if (isValueItalic) doc.setFont('helvetica', 'italic');
+    else doc.setFont('helvetica', 'normal');
+
+    const valTxt = String(value);
+    const wrapped = doc.splitTextToSize(valTxt, 82);
+    doc.text(wrapped, 48, currentY);
+
+    currentY += (wrapped.length * 5) + 3;
+  };
+
+  drawRow('Telah Diterima Dari', ':  ' + p.nama_peserta, true);
+  
+  const terbilangTxt = terbilang(p.jumlah) + ' Rupiah';
+  drawRow('Uang Sejumlah', ':  ' + terbilangTxt, false, true);
+  
+  const detailKurban = p.jenis_kurban_peserta || '-';
+  drawRow('Untuk Pembayaran', ':  Ibadah Qurban (' + detailKurban + ')');
+  
+  const noHp = p.no_hp_peserta || '-';
+  drawRow('No. Handphone', ':  ' + noHp);
+  
+  const alamat = p.alamat_peserta || '-';
+  drawRow('Alamat', ':  ' + alamat);
+  
+  const metodeStatus = `${p.metode.toUpperCase()} (${p.status.toUpperCase()})`;
+  drawRow('Metode & Status', ':  ' + metodeStatus);
+
+  // 5. Nominal Amount Box
+  doc.setFillColor(236, 253, 245);
+  doc.setDrawColor(5, 150, 105);
+  doc.setLineWidth(0.3);
+  doc.rect(12, currentY + 3, 62, 11, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12.5);
+  doc.setTextColor(5, 150, 105);
+  doc.text(rupiah(p.jumlah), 16, currentY + 10.5);
+
+  // 6. Signature Section
+  const signatureY = currentY + 4;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
+  doc.text('Penerima / Panitia,', 105, signatureY, { align: 'left' });
+
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.2);
+  doc.line(98, signatureY + 16, 136, signatureY + 16);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('Bendahara Kurban', 98, signatureY + 20);
+
+  // 7. Footer Message
+  const footerY = 195;
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.2);
+  doc.line(12, footerY - 5, 136, footerY - 5);
+
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.text('Terima kasih atas partisipasi Anda. Semoga Allah SWT menerima ibadah kurban kita.', 74, footerY, { align: 'center' });
+
+  // 8. Save/Download
+  const cleanName = p.nama_peserta.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Kwitansi_Qurban_${cleanName}.pdf`);
+  notify('success', `Kwitansi untuk ${p.nama_peserta} berhasil dibuat`);
+}
+
 function bindEvents() {
   qs('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -400,6 +578,13 @@ function bindEvents() {
     if (e.target.classList.contains('btn-del-peserta')) await hapusPeserta(id);
   });
   qs('pembayaranTable').addEventListener('click', async (e) => {
+    const btnPrint = e.target.closest('.btn-print-kwitansi');
+    if (btnPrint) {
+      const id = Number(btnPrint.dataset.id || 0);
+      generateKwitansiPDF(id);
+      return;
+    }
+
     const id = Number(e.target.dataset.id || 0);
     if (!id || !e.target.classList.contains('btn-del-pembayaran')) return;
     if (!confirm('Yakin hapus pembayaran ini?')) return;

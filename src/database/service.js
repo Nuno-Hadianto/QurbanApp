@@ -204,7 +204,7 @@ function deletePeserta(id) {
 }
 
 function listPembayaran() {
-  return db.prepare(`SELECT p.*, ps.nama as nama_peserta
+  return db.prepare(`SELECT p.*, ps.nama as nama_peserta, ps.alamat as alamat_peserta, ps.no_hp as no_hp_peserta, ps.jenis_kurban as jenis_kurban_peserta
     FROM pembayaran p JOIN peserta ps ON p.peserta_id = ps.id
     ORDER BY p.id DESC`).all();
 }
