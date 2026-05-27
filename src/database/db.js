@@ -105,7 +105,15 @@ function initDatabase() {
       tanggal TEXT NOT NULL,
       FOREIGN KEY (peserta_id) REFERENCES peserta(id)
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
+
+  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_organisasi', 'PANITIA KURBAN')").run();
+  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('alamat_organisasi', 'Aplikasi Pendataan Kurban Mandiri - QurbanApp')").run();
 
   seedData();
 }

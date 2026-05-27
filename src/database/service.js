@@ -353,6 +353,35 @@ function importPesertaBatch(rows) {
   }
 }
 
+function getSettings() {
+  const rows = db.prepare('SELECT * FROM settings').all();
+  const settingsObj = {};
+  for (const r of rows) {
+    settingsObj[r.key] = r.value;
+  }
+  return settingsObj;
+}
+
+function saveSettings(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return { success: false, message: 'Data pengaturan tidak valid' };
+  }
+
+  const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+  const updateTransaction = db.transaction((data) => {
+    for (const [key, val] of Object.entries(data)) {
+      stmt.run(key, String(val));
+    }
+  });
+
+  try {
+    updateTransaction(payload);
+    return { success: true, message: 'Profil kuitansi berhasil diperbarui' };
+  } catch (err) {
+    return { success: false, message: `Gagal memperbarui profil: ${err.message}` };
+  }
+}
+
 module.exports = {
   login,
   getDashboardStats,
@@ -377,5 +406,7 @@ module.exports = {
   getDbPath,
   getPendingRestorePath,
   getLaporan,
-  importPesertaBatch
+  importPesertaBatch,
+  getSettings,
+  saveSettings
 };

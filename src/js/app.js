@@ -1,4 +1,4 @@
-const state = { user: null, hewan: [], peserta: [], pembayaran: [], laporan: { hewan: [], peserta: [], pembayaran: [] } };
+const state = { user: null, hewan: [], peserta: [], pembayaran: [], settings: {}, laporan: { hewan: [], peserta: [], pembayaran: [] } };
 let fotoHewanBase64 = '';
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 const SESSION_TOUCH_THROTTLE_MS = 15000;
@@ -122,6 +122,7 @@ async function initApp() {
   await setupPatungan();
   await loadLaporan();
   await loadDbPath();
+  await loadSettings();
 }
 
 async function loadDashboard() {
@@ -371,6 +372,12 @@ async function loadDbPath() {
   qs('dbPathInput').value = res?.path || '-';
 }
 
+async function loadSettings() {
+  state.settings = await window.api.getSettings();
+  if (qs('orgNama')) qs('orgNama').value = state.settings.nama_organisasi || '';
+  if (qs('orgAlamat')) qs('orgAlamat').value = state.settings.alamat_organisasi || '';
+}
+
 async function copyTextSafe(text) {
   try {
     if (navigator.clipboard?.writeText) {
@@ -409,15 +416,18 @@ function generateKwitansiPDF(id) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
 
   // 1. Header (Kop Kwitansi)
+  const orgNama = state.settings?.nama_organisasi || 'PANITIA KURBAN';
+  const orgAlamat = state.settings?.alamat_organisasi || 'Aplikasi Pendataan Kurban Mandiri - QurbanApp';
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.setTextColor(5, 150, 105);
-  doc.text('PANITIA KURBAN', 12, 20);
+  doc.text(orgNama, 12, 20);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text('Aplikasi Pendataan Kurban Mandiri - QurbanApp', 12, 25);
+  doc.text(orgAlamat, 12, 25);
 
   doc.setDrawColor(5, 150, 105);
   doc.setLineWidth(0.8);
@@ -833,6 +843,19 @@ function bindEvents() {
     if (!pathVal || pathVal === '-') return;
     const ok = await copyTextSafe(pathVal);
     notify(ok ? 'success' : 'warning', ok ? 'Path database disalin' : 'Gagal menyalin otomatis. Silakan copy manual dari kolom path.');
+  });
+
+  qs('orgProfileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      nama_organisasi: qs('orgNama').value,
+      alamat_organisasi: qs('orgAlamat').value
+    };
+    const res = await window.api.saveSettings(payload);
+    notify(res.success ? 'success' : 'danger', res.message);
+    if (res.success) {
+      state.settings = { ...state.settings, ...payload };
+    }
   });
 
   qs('changePasswordForm').addEventListener('submit', async (e) => {

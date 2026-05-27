@@ -165,6 +165,8 @@ ipcMain.handle('settings:backup', safeHandle(async () => {
 ipcMain.handle('settings:db-path', async () => {
   return { path: service.getDbPath() };
 });
+ipcMain.handle('settings:get', safeHandle(async () => service.getSettings()));
+ipcMain.handle('settings:save', secureHandle(async (_, payload) => service.saveSettings(payload)));
 
 ipcMain.handle('settings:restore', safeHandle(async () => {
   const result = await dialog.showOpenDialog({

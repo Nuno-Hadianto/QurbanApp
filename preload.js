@@ -31,5 +31,7 @@ contextBridge.exposeInMainWorld('api', {
 
   backupDb: () => ipcRenderer.invoke('settings:backup'),
   restoreDb: () => ipcRenderer.invoke('settings:restore'),
-  getDbPath: () => ipcRenderer.invoke('settings:db-path')
+  getDbPath: () => ipcRenderer.invoke('settings:db-path'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (payload) => ipcRenderer.invoke('settings:save', payload)
 });
