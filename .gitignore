@@ -1,3 +1,23 @@
+# Dependency directories
 node_modules/
+
+# Build & Release output
 dist/
-src/database/qurbanapp.db
+build-artifacts/
+
+# Database files & temporary logs
+*.db
+*.db-wal
+*.db-shm
+*.db.restore
+*.log
+
+# Scratch & development files
+scratch/
+inspect_db.js
+
+# Workspace & Editor configurations
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
