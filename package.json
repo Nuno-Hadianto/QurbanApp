@@ -5,7 +5,8 @@
   "main": "main.js",
   "type": "commonjs",
   "scripts": {
-    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "start": "npx electron .",
     "build": "electron-builder",
     "clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\"",
     "release": "npm run clean && npm run build"
@@ -27,6 +28,7 @@
     "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "electron": "^37.0.0",
     "electron-builder": "^26.0.12"
   },
