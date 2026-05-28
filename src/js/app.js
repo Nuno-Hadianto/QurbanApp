@@ -215,6 +215,9 @@ function editHewan(h) {
   qs('namaHewan').value = h.nama_hewan;
   qs('beratHewan').value = h.berat;
   qs('hargaHewan').value = h.harga;
+  if (qs('hargaHewanPreview')) {
+    qs('hargaHewanPreview').innerHTML = h.harga ? `<i class="bi bi-wallet2"></i> ${rupiah(h.harga)}<br><small class="text-muted italic">${terbilang(h.harga)} Rupiah</small>` : '';
+  }
   qs('statusHewan').value = h.status;
   fotoHewanBase64 = h.foto || '';
 
@@ -288,6 +291,7 @@ function renderPembayaran() {
       <td>${new Date(p.tanggal).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
       <td>
         <button class="btn btn-sm btn-outline-emerald btn-print-kwitansi me-1" data-id="${p.id}"><i class="bi bi-printer"></i> Kwitansi</button>
+        <button class="btn btn-sm btn-outline-primary btn-send-wa me-1" data-id="${p.id}"><i class="bi bi-whatsapp"></i> Kirim WA</button>
         <button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button>
       </td>
     </tr>`;
@@ -541,6 +545,45 @@ function generateKwitansiPDF(id) {
   const cleanName = p.nama_peserta.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`Kwitansi_Qurban_${cleanName}.pdf`);
   notify('success', `Kwitansi untuk ${p.nama_peserta} berhasil dibuat`);
+}
+
+function sendWhatsAppReceipt(id) {
+  const p = state.pembayaran.find(item => item.id === id);
+  if (!p) {
+    notify('danger', 'Data pembayaran tidak ditemukan');
+    return;
+  }
+
+  let phone = String(p.no_hp_peserta || '').replace(/[^0-9]/g, '');
+  if (phone.startsWith('0')) {
+    phone = '62' + phone.slice(1);
+  }
+  if (!phone) {
+    notify('danger', 'Nomor HP peserta tidak valid');
+    return;
+  }
+
+  const orgNama = state.settings?.nama_organisasi || 'PANITIA KURBAN';
+  const detailKurban = p.jenis_kurban_peserta || '-';
+  const nominal = rupiah(p.jumlah);
+  const tanggal = new Date(p.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const statusUpper = String(p.status).toUpperCase();
+
+  const msg = `*BUKTI PEMBAYARAN KURBAN - ${orgNama}*\n\n` +
+              `Yth. Bpk/Ibu *${p.nama_peserta}*\n\n` +
+              `Alhamdulillah, telah diterima pembayaran kurban:\n` +
+              `• Nominal: *${nominal}*\n` +
+              `• Peruntukan: *Kurban ${detailKurban}*\n` +
+              `• Tanggal: *${tanggal}*\n` +
+              `• Status: *${statusUpper}*\n\n` +
+              `Semoga ibadah kurban Anda diterima oleh Allah SWT dan mendatangkan keberkahan. Aamiin.\n\n` +
+              `_Pesan dikirim otomatis oleh sistem panitia kurban QurbanApp._`;
+
+  const encodedMsg = encodeURIComponent(msg);
+  const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedMsg}`;
+  
+  window.api.openExternal(waUrl);
+  notify('success', 'Membuka WhatsApp...');
 }
 
 function parseCSVToPeserta(csvText) {
@@ -1035,8 +1078,36 @@ function bindEvents() {
       fotoHewanBase64 = '';
       qs('previewFotoHewan').classList.add('d-none');
       qs('previewFotoHewan').src = '';
+      if (qs('hargaHewanPreview')) qs('hargaHewanPreview').innerHTML = '';
     }
   });
+
+  const pModal = qs('pembayaranModal');
+  if (pModal) {
+    pModal.addEventListener('show.bs.modal', () => {
+      qs('pembayaranForm').reset();
+      if (qs('jumlahBayarPreview')) qs('jumlahBayarPreview').innerHTML = '';
+    });
+  }
+
+  const setupPricePreview = (inputId, previewId) => {
+    const input = qs(inputId);
+    const preview = qs(previewId);
+    if (!input || !preview) return;
+    const update = () => {
+      const val = Number(input.value || 0);
+      if (val > 0) {
+        preview.innerHTML = `<i class="bi bi-wallet2"></i> ${rupiah(val)}<br><small class="text-muted italic">${terbilang(val)} Rupiah</small>`;
+      } else {
+        preview.innerHTML = '';
+      }
+    };
+    input.addEventListener('input', update);
+    input.addEventListener('change', update);
+  };
+
+  setupPricePreview('hargaHewan', 'hargaHewanPreview');
+  setupPricePreview('jumlahBayar', 'jumlahBayarPreview');
 }
 
 bindEvents();
