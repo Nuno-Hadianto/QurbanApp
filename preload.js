@@ -33,5 +33,6 @@ contextBridge.exposeInMainWorld('api', {
   restoreDb: () => ipcRenderer.invoke('settings:restore'),
   getDbPath: () => ipcRenderer.invoke('settings:db-path'),
   getSettings: () => ipcRenderer.invoke('settings:get'),
-  saveSettings: (payload) => ipcRenderer.invoke('settings:save', payload)
+  saveSettings: (payload) => ipcRenderer.invoke('settings:save', payload),
+  openExternal: (url) => ipcRenderer.invoke('shell:open', url)
 });

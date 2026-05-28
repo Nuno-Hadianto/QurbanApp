@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { db, initDatabase } = require('./src/database/db');
@@ -167,6 +167,10 @@ ipcMain.handle('settings:db-path', async () => {
 });
 ipcMain.handle('settings:get', safeHandle(async () => service.getSettings()));
 ipcMain.handle('settings:save', secureHandle(async (_, payload) => service.saveSettings(payload)));
+ipcMain.handle('shell:open', async (_, url) => {
+  await shell.openExternal(url);
+  return { success: true };
+});
 
 ipcMain.handle('settings:restore', safeHandle(async () => {
   const result = await dialog.showOpenDialog({
