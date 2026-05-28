@@ -1,5 +1,6 @@
 # 🐂 QurbanApp — Aplikasi Desktop Pendataan Kurban Luring
 
+[![Build & Release](https://github.com/Nuno-Hadianto/QurbanApp/actions/workflows/build.yml/badge.svg)](https://github.com/Nuno-Hadianto/QurbanApp/actions)
 [![Platform - Windows](https://img.shields.io/badge/platform-Windows-blue.svg?style=flat-square)](https://www.microsoft.com/windows)
 [![License - ISC](https://img.shields.io/badge/license-ISC-green.svg?style=flat-square)](./LICENSE)
 [![Framework - Electron](https://img.shields.io/badge/framework-Electron-47848F.svg?style=flat-square&logo=electron)](https://www.electronjs.org/)
