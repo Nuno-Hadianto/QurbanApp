@@ -1,0 +1,34 @@
+name: Build and Release QurbanApp
+
+on:
+  push:
+    tags:
+      - 'v*' # Memicu otomatisasi hanya ketika Anda melakukan push tag versi baru (misal: v1.0.1)
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: windows-latest
+    
+    permissions:
+      contents: write # Memberikan akses ke runner untuk membuat Release dan mengunggah berkas .exe
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Menggunakan versi Node.js yang stabil
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm install
+          
+      - name: Build and Publish Electron App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Menggunakan Token GitHub bawaan untuk otentikasi rilis
+        run: |
+          npx electron-builder --win --publish always
