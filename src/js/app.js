@@ -768,6 +768,13 @@ function bindEvents() {
       return;
     }
 
+    const btnWA = e.target.closest('.btn-send-wa');
+    if (btnWA) {
+      const id = Number(btnWA.dataset.id || 0);
+      sendWhatsAppReceipt(id);
+      return;
+    }
+
     const id = Number(e.target.dataset.id || 0);
     if (!id || !e.target.classList.contains('btn-del-pembayaran')) return;
     if (!confirm('Yakin hapus pembayaran ini?')) return;
