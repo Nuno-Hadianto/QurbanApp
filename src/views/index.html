@@ -71,8 +71,9 @@
             <div class="d-flex justify-content-between mb-3">
               <input id="searchPeserta" class="form-control w-25" placeholder="Cari peserta..." />
               <div>
-                <button class="btn btn-outline-emerald me-1" onclick="document.getElementById('csvFileInput').click()"><i class="bi bi-file-earmark-arrow-up"></i> Impor CSV</button>
-                <input type="file" id="csvFileInput" accept=".csv" class="d-none" />
+                <button class="btn btn-outline-secondary me-1" id="downloadTemplateBtn"><i class="bi bi-file-earmark-arrow-down"></i> Template Excel</button>
+                <button class="btn btn-outline-emerald me-1" onclick="document.getElementById('excelFileInput').click()"><i class="bi bi-file-earmark-spreadsheet"></i> Impor Excel</button>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="d-none" />
                 <button class="btn btn-emerald" data-bs-toggle="modal" data-bs-target="#pesertaModal">Tambah Peserta</button>
               </div>
             </div>
@@ -112,7 +113,7 @@
               <div class="col-md-6 text-md-end">
                 <button id="filterLaporanBtn" class="btn btn-emerald me-2">Terapkan Filter</button>
                 <button id="resetLaporanBtn" class="btn btn-outline-secondary me-2">Reset</button>
-                <button id="exportCsv" class="btn btn-outline-emerald me-2"><i class="bi bi-filetype-csv"></i> Export CSV</button>
+                <button id="exportExcel" class="btn btn-outline-emerald me-2"><i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</button>
                 <button id="exportPdf" class="btn btn-gold me-2">Export PDF</button>
                 <button onclick="window.print()" class="btn btn-outline-dark">Print</button>
               </div>
@@ -208,6 +209,7 @@
   <script src="../../node_modules/chart.js/dist/chart.umd.js"></script>
   <script src="../../node_modules/jspdf/dist/jspdf.umd.min.js"></script>
   <script src="../../node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="../../node_modules/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../js/app.js"></script>
 </body>
 </html>

@@ -686,6 +686,35 @@ function downloadCSVFile(csvContent, filename) {
   document.body.removeChild(link);
 }
 
+function downloadExcelFile(data, headers, filename) {
+  const mappedData = data.map(item => {
+    const row = {};
+    for (const [key, header] of Object.entries(headers)) {
+      let val = item[key];
+      if (key === 'created_at' || key === 'tanggal') {
+        val = val ? new Date(val).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      }
+      row[header] = val;
+    }
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(mappedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan');
+  
+  const cols = [];
+  if (mappedData.length > 0) {
+    const keys = Object.keys(mappedData[0]);
+    for (const k of keys) {
+      cols.push({ wch: Math.max(k.length + 5, 15) });
+    }
+    worksheet['!cols'] = cols;
+  }
+
+  XLSX.writeFile(workbook, filename);
+}
+
 function bindEvents() {
   qs('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -718,35 +747,87 @@ function bindEvents() {
 
   qs('searchHewan').addEventListener('input', (e) => loadHewan(e.target.value));
   qs('searchPeserta').addEventListener('input', (e) => loadPeserta(e.target.value));
-  qs('csvFileInput').addEventListener('change', async (e) => {
+  qs('downloadTemplateBtn').addEventListener('click', () => {
+    const templateData = [
+      { 'Nama': 'Ahmad Fauzi', 'Alamat': 'Jl. Melati No. 5', 'No HP': '081234567890', 'Jenis Kurban': 'Patungan Sapi' },
+      { 'Nama': 'Budi Santoso', 'Alamat': 'Jl. Mawar No. 2', 'No HP': '081298765432', 'Jenis Kurban': 'Kambing Pribadi' }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Impor');
+    worksheet['!cols'] = [
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 15 }
+    ];
+    XLSX.writeFile(workbook, 'Template_Impor_Peserta.xlsx');
+    notify('success', 'Template Excel berhasil diunduh');
+  });
+
+  qs('excelFileInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    qs('csvFileInput').value = '';
+    qs('excelFileInput').value = '';
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
-      const text = evt.target.result;
-      const parsedData = parseCSVToPeserta(text);
-      if (parsedData.length === 0) {
-        notify('danger', 'Tidak ada data peserta kurban yang valid di berkas CSV');
-        return;
-      }
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet);
 
-      const confirmMsg = `Ditemukan ${parsedData.length} data peserta di berkas CSV. Apakah Anda yakin ingin mengimpor data ini secara massal?`;
-      if (!confirm(confirmMsg)) return;
-
-      await withLoad(async () => {
-        const res = await window.api.importPesertaBatch(parsedData);
-        if (res.success) {
-          notify('success', res.message);
-          await loadPeserta();
-          await loadDashboard();
-        } else {
-          notify('danger', res.message);
+        if (rows.length === 0) {
+          notify('danger', 'Tidak ada data peserta kurban yang valid di berkas Excel');
+          return;
         }
-      });
+
+        const parsedData = rows.map(r => {
+          const findVal = (names) => {
+            const match = Object.keys(r).find(k => names.includes(k.toLowerCase().trim()));
+            return match ? String(r[match]).trim() : '';
+          };
+
+          const nama = findVal(['nama', 'name', 'nama peserta']);
+          const alamat = findVal(['alamat', 'address']);
+          let no_hp = findVal(['no hp', 'hp', 'no. hp', 'telepon', 'phone', 'no telp', 'nohp']);
+          no_hp = no_hp.replace(/[^0-9]/g, '');
+          
+          let jenis_kurban = 'Kambing Pribadi';
+          const jenisRaw = findVal(['jenis kurban', 'jenis', 'kurban', 'jenis_kurban']).toLowerCase();
+          if (jenisRaw.includes('sapi') || jenisRaw.includes('patungan')) {
+            jenis_kurban = 'Patungan Sapi';
+          }
+
+          return { nama, alamat, no_hp, jenis_kurban };
+        }).filter(item => item.nama !== '');
+
+        if (parsedData.length === 0) {
+          notify('danger', 'Tidak ada baris data dengan Nama yang valid di berkas Excel');
+          return;
+        }
+
+        const confirmMsg = `Ditemukan ${parsedData.length} data peserta di berkas Excel. Apakah Anda yakin ingin mengimpor data ini secara massal?`;
+        if (!confirm(confirmMsg)) return;
+
+        await withLoad(async () => {
+          const res = await window.api.importPesertaBatch(parsedData);
+          if (res.success) {
+            notify('success', res.message);
+            await loadPeserta();
+            await loadDashboard();
+          } else {
+            notify('danger', res.message);
+          }
+        });
+      } catch (err) {
+        notify('danger', 'Gagal membaca berkas Excel: ' + err.message);
+      }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   });
   qs('hewanTable').addEventListener('click', async (e) => {
     const id = Number(e.target.dataset.id);
@@ -946,15 +1027,15 @@ function bindEvents() {
     if (res.success) qs('changePasswordForm').reset();
   });
 
-  qs('exportCsv').addEventListener('click', () => {
+  qs('exportExcel').addEventListener('click', () => {
     const from = qs('laporanFrom').value || 'Mulai';
     const to = qs('laporanTo').value || 'Selesai';
     const dateStr = `${from}_sd_${to}`;
 
     Swal.fire({
-      title: 'Ekspor Laporan CSV',
+      title: 'Ekspor Laporan Excel',
       html: `
-        <p class="text-muted small text-center">Pilih jenis data laporan yang ingin diekspor ke format CSV sesuai filter saat ini:</p>
+        <p class="text-muted small text-center">Pilih jenis data laporan yang ingin diekspor ke format Excel (.xlsx) sesuai filter saat ini:</p>
         <div class="d-grid gap-2 mt-3">
           <button id="btnExportPeserta" class="btn btn-emerald text-start py-2"><i class="bi bi-people-fill me-2"></i> Ekspor Data Peserta</button>
           <button id="btnExportHewan" class="btn btn-gold text-start py-2"><i class="bi bi-box2-heart-fill me-2"></i> Ekspor Data Hewan</button>
@@ -972,9 +1053,8 @@ function bindEvents() {
             return notify('warning', 'Tidak ada data peserta kurban dalam filter laporan saat ini');
           }
           const headers = { nama: 'Nama', alamat: 'Alamat', no_hp: 'No HP', jenis_kurban: 'Jenis Kurban', created_at: 'Tanggal Terdaftar' };
-          const csv = convertToCSV(state.laporan.peserta, headers);
-          downloadCSVFile(csv, `Rekap_Peserta_${dateStr}.csv`);
-          notify('success', 'Data peserta kurban berhasil diekspor ke CSV');
+          downloadExcelFile(state.laporan.peserta, headers, `Rekap_Peserta_${dateStr}.xlsx`);
+          notify('success', 'Data peserta kurban berhasil diekspor ke Excel');
         });
 
         content.querySelector('#btnExportHewan').addEventListener('click', () => {
@@ -983,9 +1063,8 @@ function bindEvents() {
             return notify('warning', 'Tidak ada data hewan kurban dalam filter laporan saat ini');
           }
           const headers = { kode_hewan: 'Kode Hewan', jenis_hewan: 'Jenis', nama_hewan: 'Nama', berat: 'Berat (kg)', harga: 'Harga (Rp)', status: 'Status' };
-          const csv = convertToCSV(state.laporan.hewan, headers);
-          downloadCSVFile(csv, `Rekap_Hewan_${dateStr}.csv`);
-          notify('success', 'Data hewan kurban berhasil diekspor ke CSV');
+          downloadExcelFile(state.laporan.hewan, headers, `Rekap_Hewan_${dateStr}.xlsx`);
+          notify('success', 'Data hewan kurban berhasil diekspor ke Excel');
         });
 
         content.querySelector('#btnExportPembayaran').addEventListener('click', () => {
@@ -994,9 +1073,8 @@ function bindEvents() {
             return notify('warning', 'Tidak ada data riwayat pembayaran dalam filter laporan saat ini');
           }
           const headers = { nama_peserta: 'Nama Peserta', jumlah: 'Jumlah (Rp)', metode: 'Metode', status: 'Status', tanggal: 'Tanggal Transaksi' };
-          const csv = convertToCSV(state.laporan.pembayaran, headers);
-          downloadCSVFile(csv, `Rekap_Pembayaran_${dateStr}.csv`);
-          notify('success', 'Data riwayat pembayaran berhasil diekspor ke CSV');
+          downloadExcelFile(state.laporan.pembayaran, headers, `Rekap_Pembayaran_${dateStr}.xlsx`);
+          notify('success', 'Data riwayat pembayaran berhasil diekspor ke Excel');
         });
       }
     });
