@@ -74,7 +74,9 @@ Aplikasi dibangun luring penuh menggunakan pustaka-pustaka populer berikut:
 
 ## 📦 Mengompilasi dan Membuat Installer (.EXE)
 
-Aplikasi ini menggunakan **electron-builder** untuk mengemas program menjadi installer Windows mandiri yang siap digunakan tanpa memerlukan Node.js terpasang pada komputer target:
+Aplikasi ini menggunakan **electron-builder** untuk mengemas program menjadi installer Windows mandiri yang siap digunakan tanpa memerlukan Node.js terpasang pada komputer target.
+
+> ⚡ **Otomatisasi**: Repositori ini telah dilengkapi dengan GitHub Actions. Setiap kali tag versi baru (misal `v*`) di-push, sistem akan otomatis melakukan kompilasi di cloud dan merilis installer terbaru di halaman Releases.
 
 1.  **Bersihkan Build Sebelumnya**:
     ```bash
