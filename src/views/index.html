@@ -53,7 +53,12 @@
       <main class="content flex-grow-1">
         <nav class="navbar bg-white shadow-sm px-4 py-3 d-flex justify-content-between">
           <h6 id="pageTitle" class="mb-0">Dashboard</h6>
-          <div><span id="sessionUser" class="me-3"></span><button id="logoutBtn" class="btn btn-sm btn-outline-danger">Logout</button></div>
+          <div class="d-flex align-items-center">
+            <span class="me-2 small fw-semibold text-muted">Tahun Kurban:</span>
+            <select id="tahunKurbanSelect" class="form-select form-select-sm me-3" style="width: auto; height: 35px;"></select>
+            <span id="sessionUser" class="me-3 small fw-semibold text-secondary"></span>
+            <button id="logoutBtn" class="btn btn-sm btn-outline-danger">Logout</button>
+          </div>
         </nav>
 
         <div class="p-4">
@@ -152,6 +157,18 @@
                 </div>
               </form>
             </div>
+            <div class="table-wrap mb-3">
+              <h6>Kelola Daftar Tahun Kurban</h6>
+              <form id="yearsListForm" class="row g-3 mt-1 align-items-end">
+                <div class="col-md-8">
+                  <label class="form-label small fw-semibold text-muted">Daftar Tahun Kurban (Pisahkan dengan koma)</label>
+                  <input id="yearsListInput" class="form-control" placeholder="Contoh: 1447 H / 2026 M, 1448 H / 2027 M" required />
+                </div>
+                <div class="col-md-4">
+                  <button class="btn btn-emerald w-100">Simpan Daftar Tahun</button>
+                </div>
+              </form>
+            </div>
             <div class="table-wrap">
               <h6>Ganti Password</h6>
               <form id="changePasswordForm" class="row g-3 mt-1">
@@ -188,6 +205,17 @@
     <div class="mb-2"><label>Alamat</label><textarea id="alamatPeserta" class="form-control" required></textarea></div>
     <div class="mb-2"><label>No HP</label><input id="hpPeserta" type="text" pattern="[0-9]+" title="Hanya masukkan angka" class="form-control" required /></div>
     <div class="mb-2"><label>Jenis Kurban</label><select id="jenisKurban" class="form-select" required><option value="Patungan Sapi">Patungan Sapi</option><option value="Kambing Pribadi">Kambing Pribadi</option></select></div>
+    <div id="patunganFormSection" class="d-none border p-3 rounded bg-light mb-2">
+      <h6 class="fw-semibold text-emerald-dark small mb-2"><i class="bi bi-diagram-3-fill me-1"></i> Slot Patungan Sapi Langsung</h6>
+      <div class="mb-2">
+        <label class="small text-muted mb-1">Pilih Sapi Patungan</label>
+        <select id="pesertaSapiSelect" class="form-select form-select-sm"></select>
+      </div>
+      <div class="mb-2">
+        <label class="small text-muted mb-1">Pilih Slot Kosong</label>
+        <select id="pesertaSlotSelect" class="form-select form-select-sm"></select>
+      </div>
+    </div>
   </div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button class="btn btn-emerald">Simpan</button></div></form></div></div>
 
   <div class="modal fade" id="pembayaranModal"><div class="modal-dialog"><form id="pembayaranForm" class="modal-content"><div class="modal-header"><h5>Input Pembayaran</h5></div><div class="modal-body">

@@ -112,8 +112,27 @@ function initDatabase() {
     );
   `);
 
+  // Migrasi kolom tahun_kurban jika belum ada
+  try {
+    db.prepare("SELECT tahun_kurban FROM hewan LIMIT 1").get();
+  } catch (_) {
+    db.exec("ALTER TABLE hewan ADD COLUMN tahun_kurban TEXT DEFAULT '1447 H / 2026 M'");
+  }
+  try {
+    db.prepare("SELECT tahun_kurban FROM peserta LIMIT 1").get();
+  } catch (_) {
+    db.exec("ALTER TABLE peserta ADD COLUMN tahun_kurban TEXT DEFAULT '1447 H / 2026 M'");
+  }
+  try {
+    db.prepare("SELECT tahun_kurban FROM pembayaran LIMIT 1").get();
+  } catch (_) {
+    db.exec("ALTER TABLE pembayaran ADD COLUMN tahun_kurban TEXT DEFAULT '1447 H / 2026 M'");
+  }
+
   db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('nama_organisasi', 'PANITIA KURBAN')").run();
   db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('alamat_organisasi', 'Aplikasi Pendataan Kurban Mandiri - QurbanApp')").run();
+  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('tahun_kurban_list', '1447 H / 2026 M,1448 H / 2027 M,1449 H / 2028 M')").run();
+  db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('tahun_kurban_aktif', '1447 H / 2026 M')").run();
 
   seedData();
 }
@@ -133,17 +152,17 @@ function seedData() {
     const insertUser = db.prepare('INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)');
     insertUser.run('Admin Qurban', 'admin', hashPassword('admin'), 'Admin');
 
-    const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now);
-    insertHewan.run('HWN-002', 'Kambing', 'Kambing Etawa B', 35, 4200000, 'dipotong', '', now);
+    const insertHewan = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    insertHewan.run('HWN-001', 'Sapi', 'Sapi Limosin A', 420, 31000000, 'tersedia', '', now, '1447 H / 2026 M');
+    insertHewan.run('HWN-002', 'Kambing', 'Kambing Etawa B', 35, 4200000, 'dipotong', '', now, '1447 H / 2026 M');
 
-    const insertPeserta = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)');
-    const p1 = insertPeserta.run('Ahmad Fauzi', 'Jl. Melati 5', '081234567890', 'Patungan Sapi', now).lastInsertRowid;
-    const p2 = insertPeserta.run('Budi Santoso', 'Jl. Mawar 2', '081298765432', 'Kambing Pribadi', now).lastInsertRowid;
+    const insertPeserta = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)');
+    const p1 = insertPeserta.run('Ahmad Fauzi', 'Jl. Melati 5', '081234567890', 'Patungan Sapi', now, '1447 H / 2026 M').lastInsertRowid;
+    const p2 = insertPeserta.run('Budi Santoso', 'Jl. Mawar 2', '081298765432', 'Kambing Pribadi', now, '1447 H / 2026 M').lastInsertRowid;
 
     db.prepare('INSERT INTO patungan (hewan_id, peserta_id, slot_ke, status) VALUES (?, ?, ?, ?)').run(1, p1, 1, 'terisi');
-    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p1, 2500000, 'transfer', 'belum lunas', now);
-    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)').run(p2, 4200000, 'cash', 'lunas', now);
+    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)').run(p1, 2500000, 'transfer', 'belum lunas', now, '1447 H / 2026 M');
+    db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)').run(p2, 4200000, 'cash', 'lunas', now, '1447 H / 2026 M');
   });
   
   seedTransaction();

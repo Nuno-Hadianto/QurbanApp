@@ -125,26 +125,26 @@ ipcMain.handle('auth:logout', async (event) => {
   authSessions.delete(event.sender.id);
   return { success: true };
 });
-ipcMain.handle('dashboard:stats', async () => service.getDashboardStats());
+ipcMain.handle('dashboard:stats', async (_, tahun) => service.getDashboardStats(tahun));
 
-ipcMain.handle('hewan:list', async (_, q) => service.listHewan(q));
+ipcMain.handle('hewan:list', async (_, q, tahun) => service.listHewan(q, tahun));
 ipcMain.handle('hewan:create', secureHandle(async (_, payload) => service.createHewan(payload)));
 ipcMain.handle('hewan:update', secureHandle(async (_, payload) => service.updateHewan(payload)));
 ipcMain.handle('hewan:delete', secureHandle(async (_, id) => service.deleteHewan(id)));
 
-ipcMain.handle('peserta:list', async (_, q) => service.listPeserta(q));
+ipcMain.handle('peserta:list', async (_, q, tahun) => service.listPeserta(q, tahun));
 ipcMain.handle('peserta:create', secureHandle(async (_, payload) => service.createPeserta(payload)));
 ipcMain.handle('peserta:update', secureHandle(async (_, payload) => service.updatePeserta(payload)));
 ipcMain.handle('peserta:delete', secureHandle(async (_, id) => service.deletePeserta(id)));
-ipcMain.handle('peserta:import-batch', secureHandle(async (_, rows) => service.importPesertaBatch(rows)));
+ipcMain.handle('peserta:import-batch', secureHandle(async (_, rows, tahun) => service.importPesertaBatch(rows, tahun)));
 
-ipcMain.handle('pembayaran:list', async () => service.listPembayaran());
+ipcMain.handle('pembayaran:list', async (_, tahun) => service.listPembayaran(tahun));
 ipcMain.handle('pembayaran:create', secureHandle(async (_, payload) => service.createPembayaran(payload)));
 ipcMain.handle('pembayaran:delete', secureHandle(async (_, id) => service.deletePembayaran(id)));
-ipcMain.handle('pembayaran:summary', async () => service.getPembayaranSummary());
+ipcMain.handle('pembayaran:summary', async (_, tahun) => service.getPembayaranSummary(tahun));
 ipcMain.handle('laporan:get', async (_, payload) => service.getLaporan(payload || {}));
 
-ipcMain.handle('master:sapi', async () => service.listSapi());
+ipcMain.handle('master:sapi', async (_, tahun) => service.listSapi(tahun));
 ipcMain.handle('patungan:list', async (_, hewanId) => service.listPatunganByHewan(hewanId));
 ipcMain.handle('patungan:add', secureHandle(async (_, payload) => service.addPatungan(payload)));
 ipcMain.handle('patungan:update', secureHandle(async (_, payload) => service.updatePatungan(payload)));

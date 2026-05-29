@@ -4,6 +4,7 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 const SESSION_TOUCH_THROTTLE_MS = 15000;
 let sessionGuardStarted = false;
 let lastSessionTouch = 0;
+let activeYear = '1447 H / 2026 M';
 
 const qs = (id) => document.getElementById(id);
 const rupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(n || 0));
@@ -115,6 +116,9 @@ function startSessionGuard() {
 }
 
 async function initApp() {
+  await loadSettings();
+  activeYear = state.settings.tahun_kurban_aktif || '1447 H / 2026 M';
+  await loadYearsDropdown();
   await loadDashboard();
   await loadHewan();
   await loadPeserta();
@@ -122,11 +126,19 @@ async function initApp() {
   await setupPatungan();
   await loadLaporan();
   await loadDbPath();
-  await loadSettings();
+}
+
+function loadYearsDropdown() {
+  const yearsStr = state.settings.tahun_kurban_list || '1447 H / 2026 M,1448 H / 2027 M,1449 H / 2028 M';
+  const years = yearsStr.split(',').map(y => y.trim()).filter(y => y.length > 0);
+  const select = qs('tahunKurbanSelect');
+  if (select) {
+    select.innerHTML = years.map(y => `<option value="${y}" ${y === activeYear ? 'selected' : ''}>${y}</option>`).join('');
+  }
 }
 
 async function loadDashboard() {
-  const s = await window.api.getDashboardStats();
+  const s = await window.api.getDashboardStats(activeYear);
   const hasData = (s.jumlahSapi > 0 || s.jumlahKambing > 0);
 
   qs('dashboardSection').innerHTML = `
@@ -205,7 +217,7 @@ function renderHewan() {
 }
 
 async function loadHewan(q = '') {
-  state.hewan = await window.api.listHewan(q);
+  state.hewan = await window.api.listHewan(q, activeYear);
   renderHewan();
 }
 
@@ -255,7 +267,7 @@ function renderPeserta() {
 }
 
 async function loadPeserta(q = '') {
-  state.peserta = await window.api.listPeserta(q);
+  state.peserta = await window.api.listPeserta(q, activeYear);
   renderPeserta();
 }
 
@@ -292,6 +304,7 @@ function renderPembayaran() {
       <td>
         <button class="btn btn-sm btn-outline-emerald btn-print-kwitansi me-1" data-id="${p.id}"><i class="bi bi-printer"></i> Kwitansi</button>
         <button class="btn btn-sm btn-outline-primary btn-send-wa me-1" data-id="${p.id}"><i class="bi bi-whatsapp"></i> Kirim WA</button>
+        <button class="btn btn-sm btn-outline-secondary btn-copy-wa me-1" data-id="${p.id}"><i class="bi bi-clipboard"></i> Salin</button>
         <button class="btn btn-sm btn-danger btn-del-pembayaran" data-id="${p.id}">Hapus</button>
       </td>
     </tr>`;
@@ -300,20 +313,20 @@ function renderPembayaran() {
 }
 
 async function loadPembayaran() {
-  state.pembayaran = await window.api.listPembayaran();
+  state.pembayaran = await window.api.listPembayaran(activeYear);
   renderPembayaran();
 }
 
 async function setupPatungan() {
   qs('slotSelect').innerHTML = [1,2,3,4,5,6,7].map((s) => `<option value="${s}">Slot ${s}</option>`).join('');
-  const sapi = await window.api.listSapi();
+  const sapi = await window.api.listSapi(activeYear);
   qs('sapiSelect').innerHTML = sapi.map((s) => `<option value="${s.id}">${s.kode_hewan} - ${s.nama_hewan}</option>`).join('');
   resetPatunganForm();
   await renderPatunganTable();
 }
 
 async function loadLaporan() {
-  const payload = { from: qs('laporanFrom')?.value || '', to: qs('laporanTo')?.value || '' };
+  const payload = { from: qs('laporanFrom')?.value || '', to: qs('laporanTo')?.value || '', tahun: activeYear };
   state.laporan = await window.api.getLaporan(payload);
 
   const summary = [
@@ -380,6 +393,7 @@ async function loadSettings() {
   state.settings = await window.api.getSettings();
   if (qs('orgNama')) qs('orgNama').value = state.settings.nama_organisasi || '';
   if (qs('orgAlamat')) qs('orgAlamat').value = state.settings.alamat_organisasi || '';
+  if (qs('yearsListInput')) qs('yearsListInput').value = state.settings.tahun_kurban_list || '1447 H / 2026 M,1448 H / 2027 M,1449 H / 2028 M';
 }
 
 async function copyTextSafe(text) {
@@ -584,6 +598,33 @@ function sendWhatsAppReceipt(id) {
   
   window.api.openExternal(waUrl);
   notify('success', 'Membuka WhatsApp...');
+}
+
+function copyWhatsAppReceipt(id) {
+  const p = state.pembayaran.find(item => item.id === id);
+  if (!p) {
+    notify('danger', 'Data pembayaran tidak ditemukan');
+    return;
+  }
+  const orgNama = state.settings?.nama_organisasi || 'PANITIA KURBAN';
+  const detailKurban = p.jenis_kurban_peserta || '-';
+  const nominal = rupiah(p.jumlah);
+  const tanggal = new Date(p.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const statusUpper = String(p.status).toUpperCase();
+
+  const msg = `*BUKTI PEMBAYARAN KURBAN - ${orgNama}*\n\n` +
+              `Yth. Bpk/Ibu *${p.nama_peserta}*\n\n` +
+              `Alhamdulillah, telah diterima pembayaran kurban:\n` +
+              `• Nominal: *${nominal}*\n` +
+              `• Peruntukan: *Kurban ${detailKurban}*\n` +
+              `• Tanggal: *${tanggal}*\n` +
+              `• Status: *${statusUpper}*\n\n` +
+              `Semoga ibadah kurban Anda diterima oleh Allah SWT dan mendatangkan keberkahan. Aamiin.\n\n` +
+              `_Pesan dikirim otomatis oleh sistem panitia kurban QurbanApp._`;
+
+  copyTextSafe(msg).then((ok) => {
+    notify(ok ? 'success' : 'warning', ok ? 'Teks WhatsApp disalin ke clipboard' : 'Gagal menyalin otomatis');
+  });
 }
 
 function parseCSVToPeserta(csvText) {
@@ -814,7 +855,7 @@ function bindEvents() {
         if (!confirm(confirmMsg)) return;
 
         await withLoad(async () => {
-          const res = await window.api.importPesertaBatch(parsedData);
+          const res = await window.api.importPesertaBatch(parsedData, activeYear);
           if (res.success) {
             notify('success', res.message);
             await loadPeserta();
@@ -856,6 +897,13 @@ function bindEvents() {
       return;
     }
 
+    const btnCopyWA = e.target.closest('.btn-copy-wa');
+    if (btnCopyWA) {
+      const id = Number(btnCopyWA.dataset.id || 0);
+      copyWhatsAppReceipt(id);
+      return;
+    }
+
     const id = Number(e.target.dataset.id || 0);
     if (!id || !e.target.classList.contains('btn-del-pembayaran')) return;
     if (!confirm('Yakin hapus pembayaran ini?')) return;
@@ -876,7 +924,8 @@ function bindEvents() {
       berat: Number(qs('beratHewan').value),
       harga: Number(qs('hargaHewan').value),
       status: qs('statusHewan').value,
-      foto: fotoHewanBase64
+      foto: fotoHewanBase64,
+      tahun_kurban: activeYear
     };
     const res = payload.id ? await window.api.updateHewan(payload) : await window.api.createHewan(payload);
     if (!res?.success) return notify('danger', res?.message || 'Gagal menyimpan data hewan');
@@ -893,8 +942,13 @@ function bindEvents() {
       nama: qs('namaPeserta').value,
       alamat: qs('alamatPeserta').value,
       no_hp: qs('hpPeserta').value,
-      jenis_kurban: qs('jenisKurban').value
+      jenis_kurban: qs('jenisKurban').value,
+      tahun_kurban: activeYear
     };
+    if (!payload.id && payload.jenis_kurban === 'Patungan Sapi') {
+      payload.sapi_id = Number(qs('pesertaSapiSelect').value || 0);
+      payload.slot_ke = Number(qs('pesertaSlotSelect').value || 0);
+    }
     const res = payload.id ? await window.api.updatePeserta(payload) : await window.api.createPeserta(payload);
     if (!res?.success) return notify('danger', res?.message || 'Gagal menyimpan data peserta');
     bootstrap.Modal.getInstance(qs('pesertaModal')).hide();
@@ -910,7 +964,8 @@ function bindEvents() {
       jumlah: Number(qs('jumlahBayar').value),
       metode: qs('metodeBayar').value,
       status: qs('statusBayar').value,
-      tanggal: new Date().toISOString()
+      tanggal: new Date().toISOString(),
+      tahun_kurban: activeYear
     });
     if (!res?.success) return notify('danger', res?.message || 'Gagal menambah pembayaran');
     bootstrap.Modal.getInstance(qs('pembayaranModal')).hide();
@@ -1193,6 +1248,90 @@ function bindEvents() {
 
   setupPricePreview('hargaHewan', 'hargaHewanPreview');
   setupPricePreview('jumlahBayar', 'jumlahBayarPreview');
+
+  const yrSelect = qs('tahunKurbanSelect');
+  if (yrSelect) {
+    yrSelect.addEventListener('change', async (e) => {
+      const selectedYear = e.target.value;
+      await withLoad(async () => {
+        await window.api.saveSettings({ tahun_kurban_aktif: selectedYear });
+        state.settings.tahun_kurban_aktif = selectedYear;
+        activeYear = selectedYear;
+        // Reload all data
+        await loadDashboard();
+        await loadHewan();
+        await loadPeserta();
+        await loadPembayaran();
+        await setupPatungan();
+        await loadLaporan();
+      });
+    });
+  }
+
+  const yForm = qs('yearsListForm');
+  if (yForm) {
+    yForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const listVal = qs('yearsListInput').value;
+      const res = await window.api.saveSettings({ tahun_kurban_list: listVal });
+      notify(res.success ? 'success' : 'danger', res.message);
+      if (res.success) {
+        state.settings.tahun_kurban_list = listVal;
+        loadYearsDropdown();
+      }
+    });
+  }
+
+  const checkJenisKurbanSection = async () => {
+    const isEdit = Number(qs('pesertaId').value || 0) > 0;
+    const jenis = qs('jenisKurban').value;
+    const patunganSect = qs('patunganFormSection');
+    
+    if (jenis === 'Patungan Sapi' && !isEdit) {
+      patunganSect.classList.remove('d-none');
+      const sapiList = await window.api.listSapi(activeYear);
+      const sapiSel = qs('pesertaSapiSelect');
+      if (sapiList.length === 0) {
+        sapiSel.innerHTML = '<option value="">Tidak ada sapi kurban</option>';
+        qs('pesertaSlotSelect').innerHTML = '';
+        return;
+      }
+      sapiSel.innerHTML = sapiList.map(s => `<option value="${s.id}">${s.kode_hewan} - ${s.nama_hewan}</option>`).join('');
+      await loadAvailableSlotsForPesertaForm();
+    } else {
+      patunganSect.classList.add('d-none');
+    }
+  };
+
+  const loadAvailableSlotsForPesertaForm = async () => {
+    const sapiId = Number(qs('pesertaSapiSelect').value || 0);
+    if (!sapiId) {
+      qs('pesertaSlotSelect').innerHTML = '';
+      return;
+    }
+    const patunganList = await window.api.listPatunganByHewan(sapiId);
+    const occupiedSlots = patunganList.map(p => Number(p.slot_ke));
+    const allSlots = [1, 2, 3, 4, 5, 6, 7];
+    const freeSlots = allSlots.filter(s => !occupiedSlots.includes(s));
+    
+    const slotSel = qs('pesertaSlotSelect');
+    if (freeSlots.length === 0) {
+      slotSel.innerHTML = '<option value="">Semua slot penuh</option>';
+    } else {
+      slotSel.innerHTML = freeSlots.map(s => `<option value="${s}">Slot ${s}</option>`).join('');
+    }
+  };
+
+  qs('jenisKurban').addEventListener('change', checkJenisKurbanSection);
+  qs('pesertaSapiSelect').addEventListener('change', loadAvailableSlotsForPesertaForm);
+
+  qs('pesertaModal').addEventListener('show.bs.modal', (e) => {
+    if (e.relatedTarget) {
+      qs('pesertaForm').reset();
+      qs('pesertaId').value = '';
+      checkJenisKurbanSection();
+    }
+  });
 }
 
 bindEvents();

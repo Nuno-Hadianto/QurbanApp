@@ -74,13 +74,13 @@ function changePassword({ userId, currentPassword, newPassword }) {
   return { success: true, message: 'Password berhasil diperbarui' };
 }
 
-function getDashboardStats() {
-  const totalHewan = db.prepare('SELECT COUNT(*) total FROM hewan').get().total;
-  const totalPeserta = db.prepare('SELECT COUNT(*) total FROM peserta').get().total;
-  const totalPembayaran = db.prepare('SELECT IFNULL(SUM(jumlah),0) total FROM pembayaran').get().total;
-  const jumlahSapi = db.prepare("SELECT COUNT(*) total FROM hewan WHERE jenis_hewan = 'Sapi'").get().total;
-  const jumlahKambing = db.prepare("SELECT COUNT(*) total FROM hewan WHERE jenis_hewan = 'Kambing'").get().total;
-  const selesai = db.prepare("SELECT COUNT(*) total FROM hewan WHERE status = 'selesai'").get().total;
+function getDashboardStats(tahun) {
+  const totalHewan = db.prepare('SELECT COUNT(*) total FROM hewan WHERE tahun_kurban = ?').get(tahun).total;
+  const totalPeserta = db.prepare('SELECT COUNT(*) total FROM peserta WHERE tahun_kurban = ?').get(tahun).total;
+  const totalPembayaran = db.prepare('SELECT IFNULL(SUM(jumlah),0) total FROM pembayaran WHERE tahun_kurban = ?').get(tahun).total;
+  const jumlahSapi = db.prepare("SELECT COUNT(*) total FROM hewan WHERE jenis_hewan = 'Sapi' AND tahun_kurban = ?").get(tahun).total;
+  const jumlahKambing = db.prepare("SELECT COUNT(*) total FROM hewan WHERE jenis_hewan = 'Kambing' AND tahun_kurban = ?").get(tahun).total;
+  const selesai = db.prepare("SELECT COUNT(*) total FROM hewan WHERE status = 'selesai' AND tahun_kurban = ?").get(tahun).total;
   return { totalHewan, totalPeserta, totalPembayaran, jumlahSapi, jumlahKambing, selesai };
 }
 
@@ -102,10 +102,10 @@ function getHewanPhotoBase64(filename) {
   return '';
 }
 
-function listHewan(q = '') {
+function listHewan(q = '', tahun) {
   const rows = db.prepare(`SELECT * FROM hewan
-    WHERE kode_hewan LIKE ? OR nama_hewan LIKE ? OR jenis_hewan LIKE ?
-    ORDER BY id DESC`).all(`%${q}%`, `%${q}%`, `%${q}%`);
+    WHERE (kode_hewan LIKE ? OR nama_hewan LIKE ? OR jenis_hewan LIKE ?) AND tahun_kurban = ?
+    ORDER BY id DESC`).all(`%${q}%`, `%${q}%`, `%${q}%`, tahun);
   return rows.map(r => ({
     ...r,
     foto: getHewanPhotoBase64(r.foto)
@@ -116,8 +116,8 @@ function createHewan(payload) {
   const maxId = db.prepare('SELECT IFNULL(MAX(id), 0) maxId FROM hewan').get().maxId;
   const kode = `HWN-${String(Number(maxId) + 1).padStart(3, '0')}`;
   const filename = saveBase64Image(payload.foto || '');
-  const stmt = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  stmt.run(kode, payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, now());
+  const stmt = db.prepare('INSERT INTO hewan (kode_hewan, jenis_hewan, nama_hewan, berat, harga, status, foto, created_at, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  stmt.run(kode, payload.jenis_hewan, payload.nama_hewan, payload.berat, payload.harga, payload.status, filename, now(), payload.tahun_kurban);
   return { success: true, message: 'Data hewan ditambahkan' };
 }
 
@@ -174,14 +174,34 @@ function deleteHewan(id) {
   return { success: true, message: 'Data hewan dihapus' };
 }
 
-function listPeserta(q = '') {
-  return db.prepare(`SELECT * FROM peserta WHERE nama LIKE ? OR no_hp LIKE ? OR jenis_kurban LIKE ? ORDER BY id DESC`).all(`%${q}%`, `%${q}%`, `%${q}%`);
+function listPeserta(q = '', tahun) {
+  return db.prepare(`SELECT * FROM peserta WHERE (nama LIKE ? OR no_hp LIKE ? OR jenis_kurban LIKE ?) AND tahun_kurban = ? ORDER BY id DESC`).all(`%${q}%`, `%${q}%`, `%${q}%`, tahun);
 }
 
 function createPeserta(payload) {
-  db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(payload.nama, payload.alamat, payload.no_hp, payload.jenis_kurban, now());
-  return { success: true, message: 'Peserta ditambahkan' };
+  const createTransaction = db.transaction(() => {
+    const stmt = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)');
+    const res = stmt.run(payload.nama, payload.alamat, payload.no_hp, payload.jenis_kurban, now(), payload.tahun_kurban);
+    const pesertaId = res.lastInsertRowid;
+    
+    if (payload.jenis_kurban === 'Patungan Sapi' && payload.sapi_id && payload.slot_ke) {
+      const resPatungan = addPatungan({
+        hewan_id: payload.sapi_id,
+        peserta_id: pesertaId,
+        slot_ke: payload.slot_ke
+      });
+      if (!resPatungan.success) {
+        throw new Error(resPatungan.message);
+      }
+    }
+  });
+
+  try {
+    createTransaction();
+    return { success: true, message: 'Peserta ditambahkan' };
+  } catch (err) {
+    return { success: false, message: err.message || 'Gagal menambahkan peserta' };
+  }
 }
 
 function updatePeserta(payload) {
@@ -203,10 +223,11 @@ function deletePeserta(id) {
   return { success: true, message: 'Peserta dihapus' };
 }
 
-function listPembayaran() {
+function listPembayaran(tahun) {
   return db.prepare(`SELECT p.*, ps.nama as nama_peserta, ps.alamat as alamat_peserta, ps.no_hp as no_hp_peserta, ps.jenis_kurban as jenis_kurban_peserta
     FROM pembayaran p JOIN peserta ps ON p.peserta_id = ps.id
-    ORDER BY p.id DESC`).all();
+    WHERE p.tahun_kurban = ?
+    ORDER BY p.id DESC`).all(tahun);
 }
 
 function createPembayaran(payload) {
@@ -216,8 +237,8 @@ function createPembayaran(payload) {
   const existPeserta = db.prepare('SELECT id FROM peserta WHERE id = ?').get(payload.peserta_id);
   if (!existPeserta) return { success: false, message: 'Peserta tidak ditemukan' };
 
-  db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal) VALUES (?, ?, ?, ?, ?)')
-    .run(payload.peserta_id, payload.jumlah, payload.metode, payload.status, payload.tanggal || now());
+  db.prepare('INSERT INTO pembayaran (peserta_id, jumlah, metode, status, tanggal, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(payload.peserta_id, payload.jumlah, payload.metode, payload.status, payload.tanggal || now(), payload.tahun_kurban);
   return { success: true, message: 'Pembayaran ditambahkan' };
 }
 
@@ -226,15 +247,15 @@ function deletePembayaran(id) {
   return { success: true, message: 'Pembayaran dihapus' };
 }
 
-function getPembayaranSummary() {
+function getPembayaranSummary(tahun) {
   return {
-    lunas: db.prepare("SELECT COUNT(*) total FROM pembayaran WHERE status = 'lunas'").get().total,
-    belum: db.prepare("SELECT COUNT(*) total FROM pembayaran WHERE status = 'belum lunas'").get().total
+    lunas: db.prepare("SELECT COUNT(*) total FROM pembayaran WHERE status = 'lunas' AND tahun_kurban = ?").get(tahun).total,
+    belum: db.prepare("SELECT COUNT(*) total FROM pembayaran WHERE status = 'belum lunas' AND tahun_kurban = ?").get(tahun).total
   };
 }
 
-function listSapi() {
-  return db.prepare("SELECT * FROM hewan WHERE jenis_hewan = 'Sapi' ORDER BY id DESC").all();
+function listSapi(tahun) {
+  return db.prepare("SELECT * FROM hewan WHERE jenis_hewan = 'Sapi' AND tahun_kurban = ? ORDER BY id DESC").all(tahun);
 }
 
 function listPatunganByHewan(hewanId) {
@@ -299,7 +320,7 @@ function getPendingRestorePath() {
   return restorePendingPath;
 }
 
-function getLaporan({ from, to }) {
+function getLaporan({ from, to, tahun }) {
   const fromIso = from ? `${from}T00:00:00.000Z` : null;
   const toIso = to ? `${to}T23:59:59.999Z` : null;
   const dateFilter = (field) => {
@@ -309,27 +330,29 @@ function getLaporan({ from, to }) {
     return '1=1';
   };
   const params = (field) => {
-    if (fromIso && toIso) return [fromIso, toIso];
-    if (fromIso) return [fromIso];
-    if (toIso) return [toIso];
-    return [];
+    const arr = [];
+    if (fromIso && toIso) arr.push(fromIso, toIso);
+    else if (fromIso) arr.push(fromIso);
+    else if (toIso) arr.push(toIso);
+    arr.push(tahun);
+    return arr;
   };
 
-  const hewan = db.prepare(`SELECT * FROM hewan WHERE ${dateFilter('created_at')} ORDER BY id DESC`).all(...params('created_at'));
-  const peserta = db.prepare(`SELECT * FROM peserta WHERE ${dateFilter('created_at')} ORDER BY id DESC`).all(...params('created_at'));
+  const hewan = db.prepare(`SELECT * FROM hewan WHERE ${dateFilter('created_at')} AND tahun_kurban = ? ORDER BY id DESC`).all(...params('created_at'));
+  const peserta = db.prepare(`SELECT * FROM peserta WHERE ${dateFilter('created_at')} AND tahun_kurban = ? ORDER BY id DESC`).all(...params('created_at'));
   const pembayaran = db.prepare(`SELECT p.*, ps.nama as nama_peserta
     FROM pembayaran p JOIN peserta ps ON p.peserta_id = ps.id
-    WHERE ${dateFilter('p.tanggal')} ORDER BY p.id DESC`).all(...params('p.tanggal'));
+    WHERE ${dateFilter('p.tanggal')} AND p.tahun_kurban = ? ORDER BY p.id DESC`).all(...params('p.tanggal'));
 
   return { hewan, peserta, pembayaran };
 }
 
-function importPesertaBatch(rows) {
+function importPesertaBatch(rows, tahun) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { success: false, message: 'Data kosong atau tidak valid' };
   }
 
-  const insert = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at) VALUES (?, ?, ?, ?, ?)');
+  const insert = db.prepare('INSERT INTO peserta (nama, alamat, no_hp, jenis_kurban, created_at, tahun_kurban) VALUES (?, ?, ?, ?, ?, ?)');
   
   const insertTransaction = db.transaction((data) => {
     let imported = 0;
@@ -339,7 +362,7 @@ function importPesertaBatch(rows) {
       const no_hp = r.no_hp || '';
       const jenis_kurban = r.jenis_kurban || 'Kambing Pribadi';
       
-      insert.run(r.nama, alamat, no_hp, jenis_kurban, now());
+      insert.run(r.nama, alamat, no_hp, jenis_kurban, now(), tahun);
       imported++;
     }
     return imported;
